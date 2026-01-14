@@ -174,12 +174,6 @@
 </head>
 <body>
 <div class="container">
-  <div class="warning" style="font-size: 18px; padding: 15px;">
-  <strong>Internal Use Only.</strong>
-  This tool is provided for internal reference and development purposes only.
-  It is provided "as-is" without warranty, and it does not constitute legal, financial, or compliance advice.
-  </div>
-  
   <h1>🔐 Sign and Broadcast Transaction</h1>
   <div class="subtitle">Multi-Network Blockchain Transaction Tool</div>
 
@@ -187,14 +181,18 @@
     <strong>📌 How to use this tool:</strong><br>
     1. Get transaction details from your API response<br>
     2. Fill in all fields below with data from the API<br>
-    3. Enter your private key (never share this!)<br>
+    3. Connect with your wallet provider<br>
     4. Sign the transaction<br>
     5. Broadcast to the blockchain<br>
     6. Optionally, copy the transaction hash for your API
   </div>
-
-  <div class="warning" style="padding: 15px; border-radius: 6px;">
-    <strong>⚠️ Security Warning:</strong> Never share your private key with anyone! This page runs entirely in your browser - no data is sent to any server.
+  
+  <div class="warning" style="font-size: 15px; padding: 15px; border-radius: 6px;">
+    <span><strong>⚠️ Internal Use Only.</strong></span>
+    <br>
+    <span>This tool is provided for internal reference and development purposes only.</span>
+    <br>
+    <span>It is provided "as-is" without warranty, and it does not constitute legal, financial, or compliance advice.</span>
   </div>
 
   <div class="section">
@@ -283,7 +281,6 @@
       Choose Signing Method
       <select id="signingMethod" onchange="toggleSigningMethod()">
         <option value="metamask">MetaMask (Browser Wallet)</option>
-        <option value="privatekey">Private Key (Direct)</option>
       </select>
       <div class="help-text">Select how you want to sign the transaction</div>
     </label>
@@ -297,17 +294,6 @@
         MetaMask will prompt you to connect your wallet and sign the transaction.<br>
         ⚠️ Make sure MetaMask is installed and unlocked.
       </div>
-    </div>
-
-    <div id="privatekeySection" style="display: none;">
-      <label style="margin-top: 15px;">
-        Your Private Key
-        <input type="password" id="privateKey" placeholder="0xYourPrivateKey..." />
-        <div class="help-text">
-          <strong>Required to sign the transaction.</strong> Must match the "From Address" above.<br>
-          ⚠️ Keep this secret! Never share it with anyone or enter it on untrusted websites.
-        </div>
-      </label>
     </div>
   </div>
 
