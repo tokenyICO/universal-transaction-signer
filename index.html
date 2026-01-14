@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sign and Broadcast Transaction </title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.7.0/dist/ethers.umd.min.js"></script>
+  <style>
+      :root {
+          --brand-color: #6129F0;
+          --brand-hover: #4e21c7;
+          --brand-light: #f3eeff;
+          --success-color: #28a745;
+          --success-hover: #218838;
+      }
+      body { 
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+          max-width: 900px;
+          margin: 2rem auto;
+          padding: 20px;
+          background: #f5f5f5;
+      }
+      .container {
+          background: white;
+          padding: 30px;
+          border-radius: 8px;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+      h1 { 
+          color: var(--brand-color);
+          margin-bottom: 10px;
+      }
+      .subtitle { color: #666; margin-bottom: 20px; }
+      .section {
+          background: #f9f9f9;
+          padding: 20px;
+          border-radius: 6px;
+          margin: 20px 0;
+          border-left: 4px solid var(--brand-color);
+      }
+      .section-title {
+          font-weight: bold;
+          color: var(--brand-color);
+          margin-bottom: 15px;
+          font-size: 1.1em;
+      }
+      label { 
+          display: block;
+          margin-top: 1rem;
+          font-weight: 600;
+          color: #444;
+      }
+      .help-text {
+          font-size: 0.85em;
+          color: #666;
+          margin-top: 3px;
+          line-height: 1.4;
+      }
+      input, textarea, select {
+          width: 100%;
+          padding: 10px;
+          box-sizing: border-box;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          font-family: monospace;
+          font-size: 13px;
+      }
+      input:focus, textarea:focus, select:focus {
+          outline: none;
+          border-color: var(--brand-color);
+          box-shadow: 0 0 0 2px var(--brand-light);
+      }
+      button {
+          margin-top: 1rem;
+          margin-right: 10px;
+          padding: 12px 24px;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 16px;
+          font-weight: 600;
+          transition: all 0.3s;
+      }
+      button:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+      }
+      #signBtn {
+          background: var(--brand-color);
+          color: white;
+      }
+      #signBtn:hover:not(:disabled) {
+          background: var(--brand-hover);
+      }
+      #sendBtn {
+          background: var(--success-color);
+          color: white;
+      }
+      #sendBtn:hover:not(:disabled) {
+          background: var(--success-hover);
+      }
+      .copy-btn {
+          background: #6c757d;
+          color: white;
+          padding: 12px 24px;
+          font-size: 16px;
+      }
+      .copy-btn:hover:not(:disabled) {
+          background: #5a6268;
+      }
+      #output {
+          margin-top: 1.5rem;
+          white-space: pre-wrap;
+          background: #f6f6f6;
+          padding: 1.5rem;
+          border-radius: 6px;
+          border: 1px solid #ddd;
+          font-family: monospace;
+          font-size: 13px;
+          line-height: 1.6;
+      }
+      .success {
+          background: #d4edda;
+          color: #155724;
+          border: 1px solid #c3e6cb;
+      }
+      .warning {
+          background: #fff3cd;
+          color: #856404;
+          border: 1px solid #ffeaa7;
+      }
+      .error {
+          background: #f8d7da;
+          color: #721c24;
+          border: 1px solid #f5c6cb;
+      }
+      .info-box {
+          background: var(--brand-light);
+          padding: 15px;
+          border-radius: 6px;
+          border-left: 4px solid var(--brand-color);
+          margin: 15px 0;
+      }
+      .api-section {
+          background: #e9ecef;
+          padding: 20px;
+          border-radius: 6px;
+          margin-top: 20px;
+      }
+      .value-display {
+          background: white;
+          padding: 10px;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          word-break: break-all;
+          font-family: monospace;
+          font-size: 12px;
+          max-height: 150px;
+          overflow-y: auto;
+      }
+      .small-copy-btn {
+          background: #6c757d;
+          color: white;
+          padding: 5px 12px;
+          font-size: 12px;
+          margin-left: 10px;
+          cursor: pointer;
+          border: none;
+          border-radius: 3px;
+      }
+      .small-copy-btn:hover {
+          background: #5a6268;
+      }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>🔐 Sign and Broadcast Transaction</h1>
+  <div class="subtitle">Multi-Network Blockchain Transaction Tool</div>
+
+  <div class="info-box">
+    <strong>📌 How to use this tool:</strong><br>
+    1. Get transaction details from your API response<br>
+    2. Fill in all fields below with data from the API<br>
+    3. Enter your private key (never share this!)<br>
+    4. Sign the transaction<br>
+    5. Broadcast to the blockchain<br>
+    6. Optionally, copy the transaction hash for your API
+  </div>
+
+  <div class="warning" style="padding: 15px; border-radius: 6px;">
+    <strong>⚠️ Security Warning:</strong> Never share your private key with anyone! This page runs entirely in your browser - no data is sent to any server.
+  </div>
+
+  <div class="section">
+    <div class="section-title">⚙️ Step 1: Network Configuration</div>
+    
+    <label>
+      Network Selection
+      <select id="networkSelect" onchange="updateNetwork()">
+        <option value="137">Polygon Mainnet (Chain ID: 137)</option>
+        <option value="80002">Polygon Amoy Testnet (Chain ID: 80002)</option>
+        <option value="custom">Custom Network</option>
+      </select>
+      <div class="help-text">Select the blockchain network or choose custom</div>
+    </label>
+
+    <label>
+      RPC URL
+      <input type="text" id="rpcUrl" value="https://polygon-rpc.com" required />
+      <div class="help-text">
+        <strong>Polygon Mainnet:</strong> https://polygon-rpc.com<br>
+        <strong>Polygon Amoy:</strong> https://rpc-amoy.polygon.technology<br>
+        You can use custom RPC URLs from Alchemy, Infura, QuickNode, etc.
+      </div>
+    </label>
+
+    <label>
+      Chain ID
+      <input type="text" id="chainId" value="137" required />
+      <div class="help-text">Network Chain ID (Polygon: 137, Amoy: 80002, Ethereum: 1). Must match the RPC URL network.</div>
+    </label>
+  </div>
+
+  <div class="section">
+    <div class="section-title">📝 Step 2: Transaction Details</div>
+
+    <label>
+      From Address (Signer Wallet)
+      <input type="text" id="from" placeholder="0xYourSignerAddress" required />
+      <div class="help-text">The wallet address that will sign this transaction. Paste from API response "signerWallet" field.</div>
+    </label>
+
+    <label>
+      To Address (Contract Address)
+      <input type="text" id="to" placeholder="0xContractAddress" required />
+      <div class="help-text">The smart contract address to interact with. Paste from API response "contractAddress" field.</div>
+    </label>
+
+    <label>
+      Transaction Data (Hex)
+      <textarea id="data" rows="6" placeholder="0x..." required></textarea>
+      <div class="help-text">
+        Encoded transaction data from API response. Paste from "transactionData" field.<br>
+        This contains the function call and parameters (e.g., batchMint, transfer, etc.).
+      </div>
+    </label>
+
+    <label>
+      Value (Native Token Amount)
+      <input type="text" id="value" value="0" />
+      <div class="help-text">Amount of native token to send in ETH/MATIC (usually 0 for contract calls). Example: 0.1 for 0.1 MATIC</div>
+    </label>
+
+    <label>
+      Gas Limit (Optional)
+      <input type="text" id="gasLimit" placeholder="Leave empty for auto-estimate" />
+      <div class="help-text">Maximum gas units for this transaction. Paste from API response "gasEstimation" if provided, or leave empty to auto-estimate.</div>
+    </label>
+
+    <label>
+      Max Priority Fee (Gwei) - Optional
+      <input type="text" id="maxPriorityFee" placeholder="Auto (Amoy: 30 gwei)" />
+      <div class="help-text">Tip for validators in gwei. Leave empty for auto-detection. Amoy requires minimum 25 gwei.</div>
+    </label>
+
+    <label>
+      Max Fee Per Gas (Gwei) - Optional
+      <input type="text" id="maxFeePerGas" placeholder="Auto (Amoy: 50 gwei)" />
+      <div class="help-text">Maximum total gas price in gwei. Leave empty for auto-detection.</div>
+    </label>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🔐 Step 3: Signing Method</div>
+    
+    <label>
+      Choose Signing Method
+      <select id="signingMethod" onchange="toggleSigningMethod()">
+        <option value="metamask">MetaMask (Browser Wallet)</option>
+        <option value="privatekey">Private Key (Direct)</option>
+      </select>
+      <div class="help-text">Select how you want to sign the transaction</div>
+    </label>
+
+    <div id="metamaskSection">
+      <div id="metamaskStatus" style="margin-top: 15px; padding: 10px; border-radius: 4px; background: #f9f9f9;"></div>
+      <button id="connectMetamaskBtn" style="background: #f6851b; color: white; margin-top: 10px;">
+        🦊 Connect MetaMask
+      </button>
+      <div class="help-text" style="margin-top: 10px;">
+        MetaMask will prompt you to connect your wallet and sign the transaction.<br>
+        ⚠️ Make sure MetaMask is installed and unlocked.
+      </div>
+    </div>
+
+    <div id="privatekeySection" style="display: none;">
+      <label style="margin-top: 15px;">
+        Your Private Key
+        <input type="password" id="privateKey" placeholder="0xYourPrivateKey..." />
+        <div class="help-text">
+          <strong>Required to sign the transaction.</strong> Must match the "From Address" above.<br>
+          ⚠️ Keep this secret! Never share it with anyone or enter it on untrusted websites.
+        </div>
+      </label>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">✍️ Step 4: Sign Transaction</div>
+    <button id="signBtn">Sign Transaction</button>
+    <button id="copySignedBtn" disabled class="copy-btn">Copy Signed TX</button>
+    <div class="help-text" style="margin-top: 10px;">
+      After signing, you can copy the raw signed transaction or broadcast it directly.
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">📤 Step 5: Broadcast to Blockchain</div>
+    <button id="sendBtn" disabled>Send Transaction</button>
+    <div class="help-text" style="margin-top: 10px;">
+      Broadcasts the signed transaction to the blockchain network.
+    </div>
+  </div>
+
+  <div id="output"></div>
+
+  <div id="apiCallSection" class="api-section" style="display: none;">
+    <div class="section-title">🔗 Step 6: Transaction Confirmed</div>
+    
+    <div style="margin-top: 15px;">
+      <strong>Transaction Hash:</strong>
+      <button class="small-copy-btn" onclick="copyTxHash()">Copy</button>
+    </div>
+    <div id="txHashDisplay" class="value-display" style="margin-top: 10px;"></div>
+
+    <div style="margin-top: 15px;">
+      <strong>API Payload (for logging in backend):</strong>
+      <button class="small-copy-btn" onclick="copyApiPayload()">Copy JSON</button>
+    </div>
+    <pre id="apiPayload" class="value-display" style="margin-top: 10px;"></pre>
+
+    <div style="margin-top: 15px;">
+      <strong>Block Explorer:</strong><br>
+      <a id="explorerLink" href="#" target="_blank" style="color: var(--brand-color); font-weight: 600;">View Transaction on Block Explorer →</a>
+    </div>
+  </div>
+</div>
+
+<script>
+  const signBtn = document.getElementById('signBtn');
+  const sendBtn = document.getElementById('sendBtn');
+  const copySignedBtn = document.getElementById('copySignedBtn');
+  const output = document.getElementById('output');
+  const apiCallSection = document.getElementById('apiCallSection');
+  const connectMetamaskBtn = document.getElementById('connectMetamaskBtn');
+  const metamaskStatus = document.getElementById('metamaskStatus');
+
+  let signedTx = null;
+  let provider, wallet;
+  let transactionHash = null;
+  let metamaskConnected = false;
+  let metamaskAccount = null;
+
+  // Network configuration
+  const networks = {
+    137: { name: 'Polygon Mainnet', rpc: 'https://polygon-rpc.com', explorer: 'https://polygonscan.com' },
+    80002: { name: 'Polygon Amoy Testnet', rpc: 'https://rpc-amoy.polygon.technology', explorer: 'https://amoy.polygonscan.com' }
+  };
+
+  // Check for MetaMask on page load
+  window.addEventListener('load', () => {
+    checkMetaMask();
+  });
+
+  function checkMetaMask() {
+    if (typeof window.ethereum !== 'undefined') {
+      metamaskStatus.innerHTML = '✅ MetaMask detected! Click "Connect MetaMask" to continue.';
+      metamaskStatus.style.background = '#d4edda';
+      metamaskStatus.style.color = '#155724';
+      connectMetamaskBtn.disabled = false;
+    } else {
+      metamaskStatus.innerHTML = '❌ MetaMask not detected. <a href="https://metamask.io/download/" target="_blank" style="color: var(--brand-color); font-weight: 600;">Install MetaMask</a> or use Private Key signing method.';
+      metamaskStatus.style.background = '#f8d7da';
+      metamaskStatus.style.color = '#721c24';
+      connectMetamaskBtn.disabled = true;
+    }
+  }
+
+  function toggleSigningMethod() {
+    const method = document.getElementById('signingMethod').value;
+    const metamaskSection = document.getElementById('metamaskSection');
+    const privatekeySection = document.getElementById('privatekeySection');
+    
+    if (method === 'metamask') {
+      metamaskSection.style.display = 'block';
+      privatekeySection.style.display = 'none';
+      checkMetaMask();
+    } else {
+      metamaskSection.style.display = 'none';
+      privatekeySection.style.display = 'block';
+    }
+  }
+
+  connectMetamaskBtn.addEventListener('click', async () => {
+    if (typeof window.ethereum === 'undefined') {
+      alert('❌ MetaMask not detected! Please install MetaMask extension.');
+      return;
+    }
+
+    try {
+      // Request account access
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      metamaskAccount = accounts[0];
+      metamaskConnected = true;
+
+      // Update from address if empty
+      const fromInput = document.getElementById('from');
+      if (!fromInput.value.trim()) {
+        fromInput.value = metamaskAccount;
+      }
+
+      metamaskStatus.innerHTML = `✅ Connected to MetaMask!<br>Account: ${metamaskAccount}`;
+      metamaskStatus.style.background = '#d4edda';
+      metamaskStatus.style.color = '#155724';
+
+      // Verify network
+      const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+      const chainIdDecimal = parseInt(chainId, 16);
+      const expectedChainId = document.getElementById('chainId').value.trim();
+      
+      if (expectedChainId && chainIdDecimal.toString() !== expectedChainId) {
+        metamaskStatus.innerHTML += `<br>⚠️ Warning: MetaMask is on Chain ID ${chainIdDecimal}, but you selected Chain ID ${expectedChainId}. Please switch networks in MetaMask.`;
+        metamaskStatus.style.background = '#fff3cd';
+        metamaskStatus.style.color = '#856404';
+      }
+
+    } catch (err) {
+      metamaskStatus.innerHTML = `❌ Failed to connect: ${err.message}`;
+      metamaskStatus.style.background = '#f8d7da';
+      metamaskStatus.style.color = '#721c24';
+      metamaskConnected = false;
+      console.error(err);
+    }
+  });
+
+  // Listen for account changes
+  if (typeof window.ethereum !== 'undefined') {
+    window.ethereum.on('accountsChanged', (accounts) => {
+      if (accounts.length === 0) {
+        metamaskConnected = false;
+        metamaskAccount = null;
+        metamaskStatus.innerHTML = '❌ MetaMask disconnected. Please connect again.';
+        metamaskStatus.style.background = '#f8d7da';
+        metamaskStatus.style.color = '#721c24';
+      } else {
+        metamaskAccount = accounts[0];
+        metamaskStatus.innerHTML = `✅ Connected to MetaMask!<br>Account: ${metamaskAccount}`;
+        document.getElementById('from').value = metamaskAccount;
+      }
+    });
+
+    window.ethereum.on('chainChanged', () => {
+      window.location.reload();
+    });
+  }
+
+  function updateNetwork() {
+    const select = document.getElementById('networkSelect');
+    const rpcInput = document.getElementById('rpcUrl');
+    const chainIdInput = document.getElementById('chainId');
+    const value = select.value;
+
+    if (value === 'custom') {
+      rpcInput.value = '';
+      chainIdInput.value = '';
+      rpcInput.placeholder = 'Enter custom RPC URL';
+      chainIdInput.placeholder = 'Enter chain ID';
+    } else {
+      const network = networks[value];
+      rpcInput.value = network.rpc;
+      chainIdInput.value = value;
+    }
+  }
+
+  signBtn.addEventListener('click', async () => {
+    output.textContent = '⏳ Preparing to sign transaction...';
+    output.className = '';
+    signedTx = null;
+    sendBtn.disabled = true;
+    copySignedBtn.disabled = true;
+    apiCallSection.style.display = 'none';
+
+    const signingMethod = document.getElementById('signingMethod').value;
+
+    try {
+      const from       = document.getElementById('from').value.trim();
+      const to         = document.getElementById('to').value.trim();
+      const data       = document.getElementById('data').value.trim() || '0x';
+      const rpcUrl     = document.getElementById('rpcUrl').value.trim();
+      const gasLimit   = document.getElementById('gasLimit').value.trim();
+      const value      = document.getElementById('value').value.trim() || '0';
+      const expectedChainId = document.getElementById('chainId').value.trim();
+
+      // Validation
+      if (!from) throw new Error('Please enter "From Address"');
+      if (!to) throw new Error('Please enter "To Address" (contract address)');
+      if (!rpcUrl) throw new Error('Please enter RPC URL');
+      if (!expectedChainId) throw new Error('Please enter Chain ID');
+
+      // Setup based on signing method
+      if (signingMethod === 'metamask') {
+        // MetaMask signing
+        if (!metamaskConnected) {
+          throw new Error('Please connect MetaMask first!');
+        }
+
+        // Verify from address matches MetaMask account
+        if (from.toLowerCase() !== metamaskAccount.toLowerCase()) {
+          throw new Error(
+            `❌ Address mismatch!\n\n` +
+            `From Address field: ${from}\n` +
+            `MetaMask account: ${metamaskAccount}\n\n` +
+            `Please update the From Address to match your MetaMask account.`
+          );
+        }
+
+        // Verify network
+        const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+        const chainIdDecimal = parseInt(chainId, 16);
+        
+        if (chainIdDecimal.toString() !== expectedChainId) {
+          throw new Error(
+            `❌ Network mismatch!\n\n` +
+            `MetaMask Chain ID: ${chainIdDecimal}\n` +
+            `Expected Chain ID: ${expectedChainId}\n\n` +
+            `Please switch to the correct network in MetaMask.`
+          );
+        }
+
+        output.textContent = '🦊 MetaMask ready! Building transaction...';
+        provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        
+      } else {
+        // Private key signing
+        const key = document.getElementById('privateKey').value.trim();
+        if (!key) throw new Error('Please enter your private key');
+
+        // Setup provider & wallet
+        output.textContent = '🔌 Connecting to network...';
+        provider = new ethers.JsonRpcProvider(rpcUrl);
+        wallet   = new ethers.Wallet(key, provider);
+
+        // Verify from matches private key
+        if (from.toLowerCase() !== wallet.address.toLowerCase()) {
+          throw new Error(
+            `❌ Address mismatch!\n\n` +
+            `Expected From Address: ${from}\n` +
+            `Private Key Address: ${wallet.address}\n\n` +
+            `The private key does not match the "From Address" field.`
+          );
+        }
+
+        // Verify network
+        const network = await provider.getNetwork();
+        
+        if (network.chainId.toString() !== expectedChainId) {
+          throw new Error(
+            `❌ Network mismatch!\n\n` +
+            `RPC returned Chain ID: ${network.chainId}\n` +
+            `Expected Chain ID: ${expectedChainId}\n\n` +
+            `Make sure the RPC URL matches the selected network.`
+          );
+        }
+      }
+
+      const networkName = networks[expectedChainId]?.name || `Chain ID ${expectedChainId}`;
+      output.textContent = `✅ Network verified: ${networkName}\n\n📝 Building transaction...`;
+
+      // Build transaction object
+      const tx = {
+        to,
+        data,
+        value: value === '0' ? 0 : ethers.parseEther(value)
+      };
+
+      // Add gas limit if provided
+      if (gasLimit) {
+        tx.gasLimit = gasLimit;
+      }
+
+      // Handle gas prices (especially for Amoy testnet)
+      const maxPriorityFeeInput = document.getElementById('maxPriorityFee').value.trim();
+      const maxFeePerGasInput = document.getElementById('maxFeePerGas').value.trim();
+      
+      if (maxPriorityFeeInput || maxFeePerGasInput) {
+        // User provided custom gas prices
+        if (maxPriorityFeeInput) {
+          tx.maxPriorityFeePerGas = ethers.parseUnits(maxPriorityFeeInput, 'gwei');
+        }
+        if (maxFeePerGasInput) {
+          tx.maxFeePerGas = ethers.parseUnits(maxFeePerGasInput, 'gwei');
+        }
+      } else if (expectedChainId === '80002') {
+        // Amoy testnet requires minimum 25 gwei priority fee
+        tx.maxPriorityFeePerGas = ethers.parseUnits('30', 'gwei');
+        tx.maxFeePerGas = ethers.parseUnits('50', 'gwei');
+      }
+      // For other networks, let ethers.js auto-detect gas prices
+
+      output.textContent = '⏳ Populating transaction details (nonce, gas, etc.)...';
+      let populated, signerAddress;
+
+      if (signingMethod === 'metamask') {
+        // MetaMask transaction population and signing
+        const signer = await provider.getSigner();
+        signerAddress = await signer.getAddress();
+        populated = await signer.populateTransaction(tx);
+
+        output.textContent = 
+          '📋 Transaction Details:\n\n' +
+          `Network: ${networkName}\n` +
+          `From: ${signerAddress}\n` +
+          `To: ${to}\n` +
+          `Value: ${value} (${tx.value.toString()} wei)\n` +
+          `Nonce: ${populated.nonce}\n` +
+          `Gas Limit: ${populated.gasLimit}\n` +
+          `Gas Price: ${populated.gasPrice ? ethers.formatUnits(populated.gasPrice, 'gwei') + ' gwei' : 'EIP-1559'}\n\n` +
+          '🦊 Please confirm the transaction in MetaMask...';
+
+        // MetaMask will show its own confirmation dialog
+        signedTx = await signer.signTransaction(populated);
+
+        output.textContent =
+          '✅ Transaction Signed Successfully with MetaMask!\n\n' +
+          `Network: ${networkName}\n` +
+          `Signer: ${signerAddress}\n` +
+          `Nonce: ${populated.nonce}\n` +
+          `Gas Limit: ${populated.gasLimit}\n\n` +
+          `Signed Transaction Length: ${signedTx.length} characters\n` +
+          `Preview: ${signedTx.substring(0, 66)}...\n\n` +
+          '✅ You can now:\n' +
+          '• Click "Copy Signed TX" to copy the raw signed transaction\n' +
+          '• Click "Send Transaction" to broadcast it to the blockchain';
+        
+      } else {
+        // Private key signing
+        populated = await wallet.populateTransaction(tx);
+        signerAddress = wallet.address;
+
+        output.textContent = 
+          '📋 Transaction Details:\n\n' +
+          `Network: ${networkName}\n` +
+          `From: ${wallet.address}\n` +
+          `To: ${to}\n` +
+          `Value: ${value} (${tx.value.toString()} wei)\n` +
+          `Nonce: ${populated.nonce}\n` +
+          `Gas Limit: ${populated.gasLimit}\n` +
+          `Gas Price: ${populated.gasPrice ? ethers.formatUnits(populated.gasPrice, 'gwei') + ' gwei' : 'EIP-1559'}\n\n` +
+          '🔐 Signing transaction...';
+
+        signedTx = await wallet.signTransaction(populated);
+
+        output.textContent =
+          '✅ Transaction Signed Successfully!\n\n' +
+          `Network: ${networkName}\n` +
+          `Signer: ${wallet.address}\n` +
+          `Nonce: ${populated.nonce}\n` +
+          `Gas Limit: ${populated.gasLimit}\n\n` +
+          `Signed Transaction Length: ${signedTx.length} characters\n` +
+          `Preview: ${signedTx.substring(0, 66)}...\n\n` +
+          '✅ You can now:\n' +
+          '• Click "Copy Signed TX" to copy the raw signed transaction\n' +
+          '• Click "Send Transaction" to broadcast it to the blockchain';
+      }
+      
+      output.className = 'success';
+      sendBtn.disabled = false;
+      copySignedBtn.disabled = false;
+
+    } catch (err) {
+      output.textContent = `❌ Error: ${err.message || err}`;
+      output.className = 'error';
+      console.error(err);
+    }
+  });
+
+  sendBtn.addEventListener('click', async () => {
+    if (!signedTx) {
+      output.textContent = '❌ No signed transaction available. Please sign first.';
+      output.className = 'error';
+      return;
+    }
+
+    const chainId = document.getElementById('chainId').value.trim();
+    const networkName = networks[chainId]?.name || `Chain ID ${chainId}`;
+
+    output.textContent = `📤 Broadcasting transaction to ${networkName}...\n\nThis may take a few seconds...`;
+    output.className = '';
+    
+    try {
+      const txResponse = await provider.broadcastTransaction(signedTx);
+      transactionHash = txResponse.hash;
+      
+      output.textContent =
+        '✅ Transaction Broadcasted!\n\n' +
+        `Network: ${networkName}\n` +
+        `Transaction Hash: ${txResponse.hash}\n\n` +
+        '⏳ Waiting for blockchain confirmation...\n' +
+        'This may take a few seconds to a few minutes depending on the network.';
+      
+      output.className = 'warning';
+
+      // Determine explorer URL
+      const explorerUrl = networks[chainId]?.explorer || `https://etherscan.io`;
+      
+      // Update API section
+      document.getElementById('txHashDisplay').textContent = txResponse.hash;
+      document.getElementById('explorerLink').href = `${explorerUrl}/tx/${txResponse.hash}`;
+      document.getElementById('apiPayload').textContent = JSON.stringify({ txHash: txResponse.hash }, null, 2);
+      apiCallSection.style.display = 'block';
+
+      // Wait for confirmation
+      const receipt = await txResponse.wait();
+      
+      if (receipt.status === 1) {
+        output.textContent =
+          '🎉 Transaction Confirmed Successfully!\n\n' +
+          `Network: ${networkName}\n` +
+          `Transaction Hash: ${txResponse.hash}\n` +
+          `Block Number: ${receipt.blockNumber}\n` +
+          `Gas Used: ${receipt.gasUsed.toString()}\n` +
+          `Effective Gas Price: ${ethers.formatUnits(receipt.gasPrice || 0, 'gwei')} gwei\n` +
+          `Status: Success ✅\n\n` +
+          '👇 Scroll down to see transaction details and block explorer link.';
+        output.className = 'success';
+      } else {
+        output.textContent =
+          '❌ Transaction Failed!\n\n' +
+          `Network: ${networkName}\n` +
+          `Transaction Hash: ${txResponse.hash}\n` +
+          `Block Number: ${receipt.blockNumber}\n` +
+          `Status: Failed/Reverted ❌\n\n` +
+          'The transaction was mined but reverted. Check the block explorer for details.';
+        output.className = 'error';
+      }
+
+    } catch (err) {
+      output.textContent = 
+        `❌ Error broadcasting transaction:\n\n${err.message || err}\n\n` +
+        'Common issues:\n' +
+        '• Insufficient funds for gas\n' +
+        '• Transaction reverted (check contract logic)\n' +
+        '• Network congestion or RPC issues\n' +
+        '• Nonce already used\n' +
+        '• Invalid transaction data';
+      output.className = 'error';
+      console.error(err);
+    }
+  });
+
+  copySignedBtn.addEventListener('click', () => {
+    if (!signedTx) {
+      alert('❌ No signed transaction available!');
+      return;
+    }
+    navigator.clipboard.writeText(signedTx);
+    alert('✅ Signed transaction copied to clipboard!\n\nYou can now use this raw signed transaction with any RPC endpoint or tool.');
+  });
+
+  function copyTxHash() {
+    navigator.clipboard.writeText(transactionHash);
+    alert('✅ Transaction hash copied to clipboard!');
+  }
+
+  function copyApiPayload() {
+    const payload = JSON.stringify({ txHash: transactionHash }, null, 2);
+    navigator.clipboard.writeText(payload);
+    alert('✅ API payload copied to clipboard!');
+  }
+</script>
+</body>
+</html>
