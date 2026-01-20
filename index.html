@@ -2,341 +2,1084 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Sign and Broadcast Transaction </title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Transaction Signing Tool - Token Actions V2</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.7.0/dist/ethers.umd.min.js"></script>
   <style>
       :root {
           --brand-color: #6129F0;
           --brand-hover: #4e21c7;
           --brand-light: #f3eeff;
+          --brand-orange: #D37D3A;
+          --brand-orange-light: #fef3ec;
           --success-color: #28a745;
           --success-hover: #218838;
+          --warning-color: #ffc107;
+          --info-color: #17a2b8;
       }
+      
+      * {
+          box-sizing: border-box;
+          font-family: 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans',
+            'Helvetica Neue', sans-serif;
+          -webkit-font-smoothing: antialiased;
+          -moz-osx-font-smoothing: grayscale;
+      }
+      
       body { 
-          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-          max-width: 900px;
-          margin: 2rem auto;
+          max-width: 1400px;
+          margin: 0 auto;
           padding: 20px;
-          background: #f5f5f5;
+          background: #f5f7fa;
+          min-height: 100vh;
       }
+      
+      .page-wrapper {
+          width: 100%;
+      }
+      
+      .main-content {
+          width: 100%;
+      }
+      
       .container {
           background: white;
-          padding: 30px;
-          border-radius: 8px;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          padding: 40px;
+          border-radius: 12px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       }
+      
+      .header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 30px;
+          padding-bottom: 20px;
+          border-bottom: 2px solid var(--brand-light);
+          position: relative;
+      }
+      
+      .header-left {
+          display: flex;
+          align-items: center;
+          gap: 20px;
+          flex: 1;
+      }
+      
+      .header-logo {
+          max-width: 160px;
+          height: auto;
+      }
+      
+      .header h1 {
+          margin: 0;
+      }
+      
+      .faq-button {
+          background: var(--brand-color);
+          color: white;
+          padding: 12px 24px;
+          border: none;
+          border-radius: 6px;
+          cursor: pointer;
+          font-weight: 600;
+          transition: all 0.3s;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          white-space: nowrap;
+      }
+      
+      .faq-button:hover {
+          background: var(--brand-hover);
+          transform: translateY(-2px);
+          box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+      }
+      
+      .modal {
+          display: none;
+          position: fixed;
+          z-index: 1000;
+          left: 0;
+          top: 0;
+          width: 100%;
+          height: 100%;
+          background-color: rgba(0, 0, 0, 0.5);
+          animation: fadeIn 0.3s;
+      }
+      
+      @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+      }
+      
+      .modal-content {
+          background-color: white;
+          margin: 5% auto;
+          padding: 0;
+          border-radius: 12px;
+          width: 90%;
+          max-width: 700px;
+          max-height: 80vh;
+          overflow: hidden;
+          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+          animation: slideIn 0.3s;
+      }
+      
+      @keyframes slideIn {
+          from {
+              transform: translateY(-50px);
+              opacity: 0;
+          }
+          to {
+              transform: translateY(0);
+              opacity: 1;
+          }
+      }
+      
+      .modal-header {
+          padding: 25px 30px;
+          background: var(--brand-color);
+          color: white;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+      }
+      
+      .modal-header h2 {
+          margin: 0;
+          font-size: 1.5em;
+      }
+      
+      .close-modal {
+          background: none;
+          border: none;
+          color: white;
+          font-size: 2em;
+          cursor: pointer;
+          padding: 0;
+          width: 40px;
+          height: 40px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 50%;
+          transition: background 0.3s;
+      }
+      
+      .close-modal:hover {
+          background: rgba(255, 255, 255, 0.2);
+      }
+      
+      .modal-body {
+          padding: 30px;
+          max-height: calc(80vh - 100px);
+          overflow-y: auto;
+      }
+      
       h1 { 
           color: var(--brand-color);
-          margin-bottom: 10px;
+          margin: 0 0 10px 0;
+          font-size: 2em;
       }
-      .subtitle { color: #666; margin-bottom: 20px; }
+      
+      .subtitle { 
+          color: #666; 
+          font-size: 1.1em;
+          margin: 5px 0;
+      }
+      
+      .intro-section {
+          background: linear-gradient(135deg, var(--brand-light) 0%, #fff 100%);
+          padding: 25px;
+          border-radius: 8px;
+          margin-bottom: 30px;
+          border-left: 4px solid var(--brand-color);
+      }
+      
+      .intro-section h2 {
+          color: var(--brand-color);
+          margin-top: 0;
+          font-size: 1.3em;
+      }
+      
+      .intro-section p {
+          line-height: 1.6;
+          color: #444;
+          margin: 10px 0;
+      }
+      
+      .intro-section ul {
+          margin: 15px 0;
+          padding-left: 20px;
+      }
+      
+      .intro-section li {
+          margin: 8px 0;
+          line-height: 1.5;
+      }
+      
+      .glossary {
+          background: #f8f9fa;
+          padding: 15px;
+          border-radius: 6px;
+          margin-top: 15px;
+      }
+      
+      .glossary-term {
+          margin: 10px 0;
+          padding: 8px;
+          background: white;
+          border-radius: 4px;
+      }
+      
+      .glossary-term strong {
+          color: var(--brand-color);
+      }
+      
       .section {
           background: #f9f9f9;
-          padding: 20px;
-          border-radius: 6px;
+          padding: 25px;
+          border-radius: 8px;
           margin: 20px 0;
           border-left: 4px solid var(--brand-color);
       }
+      
       .section-title {
           font-weight: bold;
           color: var(--brand-color);
-          margin-bottom: 15px;
-          font-size: 1.1em;
+          margin-bottom: 20px;
+          font-size: 1.2em;
+          display: flex;
+          align-items: center;
+          gap: 10px;
       }
+      
+      .step-number {
+          background: var(--brand-color);
+          color: white;
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: bold;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+      
       label { 
           display: block;
-          margin-top: 1rem;
+          margin-top: 1.2rem;
           font-weight: 600;
-          color: #444;
+          color: #333;
+          font-size: 0.95em;
       }
+      
       .help-text {
           font-size: 0.85em;
           color: #666;
-          margin-top: 3px;
-          line-height: 1.4;
+          margin-top: 5px;
+          line-height: 1.5;
+          padding: 8px 12px;
+          background: white;
+          border-radius: 4px;
       }
+      
       input, textarea, select {
           width: 100%;
-          padding: 10px;
-          box-sizing: border-box;
-          border: 1px solid #ddd;
-          border-radius: 4px;
-          font-family: monospace;
+          padding: 12px;
+          margin-top: 5px;
+          border: 2px solid #ddd;
+          border-radius: 6px;
+          font-family: 'Courier New', monospace;
           font-size: 13px;
+          transition: all 0.3s;
       }
+      
       input:focus, textarea:focus, select:focus {
           outline: none;
           border-color: var(--brand-color);
-          box-shadow: 0 0 0 2px var(--brand-light);
+          box-shadow: 0 0 0 3px var(--brand-light);
       }
+      
       button {
           margin-top: 1rem;
           margin-right: 10px;
-          padding: 12px 24px;
+          padding: 14px 28px;
           border: none;
-          border-radius: 4px;
+          border-radius: 6px;
           cursor: pointer;
           font-size: 16px;
           font-weight: 600;
           transition: all 0.3s;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
       }
+      
+      button:hover:not(:disabled) {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+      }
+      
       button:disabled {
           opacity: 0.5;
           cursor: not-allowed;
+          transform: none !important;
       }
-      #signBtn {
+      
+      .btn-primary {
           background: var(--brand-color);
           color: white;
       }
-      #signBtn:hover:not(:disabled) {
+      
+      .btn-primary:hover:not(:disabled) {
           background: var(--brand-hover);
       }
-      #sendBtn {
+      
+      .btn-success {
           background: var(--success-color);
           color: white;
       }
-      #sendBtn:hover:not(:disabled) {
+      
+      .btn-success:hover:not(:disabled) {
           background: var(--success-hover);
       }
-      .copy-btn {
+      
+      .btn-secondary {
           background: #6c757d;
           color: white;
-          padding: 12px 24px;
-          font-size: 16px;
       }
-      .copy-btn:hover:not(:disabled) {
+      
+      .btn-secondary:hover:not(:disabled) {
           background: #5a6268;
       }
+      
+      .btn-metamask {
+          background: #f6851b;
+          color: white;
+      }
+      
+      .btn-metamask:hover:not(:disabled) {
+          background: #e2761b;
+      }
+      
       #output {
           margin-top: 1.5rem;
           white-space: pre-wrap;
           background: #f6f6f6;
           padding: 1.5rem;
-          border-radius: 6px;
-          border: 1px solid #ddd;
-          font-family: monospace;
+          border-radius: 8px;
+          border: 2px solid #ddd;
+          font-family: 'Courier New', monospace;
           font-size: 13px;
           line-height: 1.6;
+          min-height: 60px;
       }
+      
       .success {
           background: #d4edda;
           color: #155724;
-          border: 1px solid #c3e6cb;
+          border-color: #c3e6cb;
       }
+      
       .warning {
           background: #fff3cd;
           color: #856404;
-          border: 1px solid #ffeaa7;
+          border-color: #ffeaa7;
       }
+      
       .error {
           background: #f8d7da;
           color: #721c24;
-          border: 1px solid #f5c6cb;
+          border-color: #f5c6cb;
       }
+      
       .info-box {
-          background: var(--brand-light);
+          background: #d1ecf1;
           padding: 15px;
           border-radius: 6px;
-          border-left: 4px solid var(--brand-color);
+          border-left: 4px solid var(--info-color);
           margin: 15px 0;
+          color: #0c5460;
       }
+      
+      .security-warning {
+          background: #fff3cd;
+          padding: 15px;
+          border-radius: 6px;
+          border-left: 4px solid var(--warning-color);
+          margin: 15px 0;
+          color: #856404;
+      }
+      
       .api-section {
           background: #e9ecef;
-          padding: 20px;
-          border-radius: 6px;
+          padding: 25px;
+          border-radius: 8px;
           margin-top: 20px;
       }
+      
       .value-display {
           background: white;
-          padding: 10px;
+          padding: 12px;
           border: 1px solid #ddd;
-          border-radius: 4px;
+          border-radius: 6px;
           word-break: break-all;
-          font-family: monospace;
+          font-family: 'Courier New', monospace;
           font-size: 12px;
           max-height: 150px;
           overflow-y: auto;
       }
+      
       .small-copy-btn {
           background: #6c757d;
           color: white;
-          padding: 5px 12px;
+          padding: 6px 14px;
           font-size: 12px;
           margin-left: 10px;
           cursor: pointer;
           border: none;
-          border-radius: 3px;
+          border-radius: 4px;
       }
+      
       .small-copy-btn:hover {
           background: #5a6268;
+      }
+      
+      .advanced-toggle {
+          background: #6c757d;
+          color: white;
+          padding: 10px 20px;
+          border: none;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 14px;
+          margin: 15px 0;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+      }
+      
+      .advanced-toggle:hover {
+          background: #5a6268;
+      }
+      
+      .advanced-section {
+          display: none;
+          margin-top: 15px;
+          padding: 20px;
+          background: #f0f0f0;
+          border-radius: 6px;
+          border: 1px dashed #999;
+      }
+      
+      .advanced-section.visible {
+          display: block;
+      }
+      
+      .chainlist-link {
+          display: inline-block;
+          margin-top: 10px;
+          padding: 10px 20px;
+          background: var(--brand-color);
+          color: white;
+          text-decoration: none;
+          border-radius: 6px;
+          font-weight: 600;
+          transition: all 0.3s;
+      }
+      
+      .chainlist-link:hover {
+          background: var(--brand-hover);
+          transform: translateY(-2px);
+      }
+      
+      .tooltip {
+          position: relative;
+          display: inline-block;
+          cursor: help;
+          color: var(--brand-color);
+          font-weight: bold;
+          border-bottom: 1px dotted var(--brand-color);
+      }
+      
+      .quick-help {
+          background: var(--brand-light);
+          padding: 12px;
+          border-radius: 6px;
+          margin: 10px 0;
+          font-size: 0.9em;
+      }
+      
+      .accordion {
+          background: white;
+          border: 1px solid #ddd;
+          border-radius: 8px;
+          margin-bottom: 15px;
+          overflow: hidden;
+      }
+      
+      .accordion-header {
+          background: #f8f9fa;
+          color: #333;
+          padding: 12px 16px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          font-weight: 500;
+          font-size: 0.95em;
+          transition: all 0.2s;
+          user-select: none;
+          border-bottom: 1px solid #e9ecef;
+      }
+      
+      .accordion-header:hover {
+          background: #e9ecef;
+      }
+      
+      .accordion-icon {
+          font-size: 1em;
+          transition: transform 0.3s;
+          min-width: 16px;
+          text-align: center;
+          color: #666;
+      }
+      
+      .accordion-icon.open {
+          transform: rotate(180deg);
+      }
+      
+      .accordion-content {
+          max-height: 0;
+          overflow: hidden;
+          transition: max-height 0.3s ease-out;
+          background: white;
+      }
+      
+      .accordion-content.open {
+          max-height: 2000px;
+          transition: max-height 0.5s ease-in;
+      }
+      
+      .accordion-body {
+          padding: 16px;
+          font-size: 0.9em;
+          line-height: 1.6;
+          color: #555;
+      }
+      
+      @media (max-width: 768px) {
+          .modal-content {
+              width: 95%;
+              margin: 3% auto;
+              max-height: 90vh;
+          }
+          
+          .header {
+              flex-direction: column;
+              align-items: flex-start;
+          }
+          
+          .header-left {
+              flex-direction: column;
+              align-items: flex-start;
+              width: 100%;
+              gap: 15px;
+          }
+          
+          .header-logo {
+              max-width: 150px;
+          }
+          
+          .faq-button {
+              width: 100%;
+              margin-top: 15px;
+              justify-content: center;
+          }
+      }
+
+      @media (max-width: 768px) {
+          body {
+              padding: 10px;
+          }
+          
+          .container {
+              padding: 20px;
+          }
+          
+          h1 {
+              font-size: 1.5em;
+          }
+          
+          button {
+              padding: 12px 20px;
+              font-size: 14px;
+          }
       }
   </style>
 </head>
 <body>
-<div class="container">
-  <h1>🔐 Sign and Broadcast Transaction</h1>
-  <div class="subtitle">Multi-Network Blockchain Transaction Tool</div>
+ 
 
-  <div class="info-box">
-    <strong>📌 How to use this tool:</strong><br>
-    1. Get transaction details from your API response<br>
-    2. Fill in all fields below with data from the API<br>
-    3. Connect with your wallet provider<br>
-    4. Sign the transaction<br>
-    5. Broadcast to the blockchain<br>
-    6. Optionally, copy the transaction hash for your API
-  </div>
-  
-  <div class="warning" style="font-size: 15px; padding: 15px; border-radius: 6px;">
-    <span><strong>⚠️ Internal Use Only.</strong></span>
-    <br>
-    <span>This tool is provided for internal reference and development purposes only.</span>
-    <br>
-    <span>It is provided "as-is" without warranty, and it does not constitute legal, financial, or compliance advice.</span>
-  </div>
+<div class="page-wrapper">
+  <div class="main-content">
+    <div class="container">
+      <div class="header">
+          <img class="header-logo" src="data:image/png;base64,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" alt="Company Logo" class="logo-img" />
 
+        <h1>Transaction Signing Tool</h1>
+        <button class="faq-button" onclick="openModal()">
+          <span>❓</span>
+          <span>FAQ & Help</span>
+        </button>
+      </div>
+
+      <!-- Step 1: Network Configuration -->
   <div class="section">
-    <div class="section-title">⚙️ Step 1: Network Configuration</div>
+    <div class="section-title">
+      <span class="step-number">1</span>
+      Choose Your Blockchain Network
+    </div>
     
+    <div class="info-box">
+      <strong>ℹ️ What to do:</strong> Select which blockchain network your transaction will run on. 
+      This information comes from your API response or integration documentation.
+    </div>
+
     <label>
-      Network Selection
+      Select Network
       <select id="networkSelect" onchange="updateNetwork()">
-        <option value="137">Polygon Mainnet (Chain ID: 137)</option>
-        <option value="80002">Polygon Amoy Testnet (Chain ID: 80002)</option>
+        <option value="137">Polygon Mainnet (Most Common)</option>
+        <option value="80002">Polygon Amoy Testnet (For Testing)</option>
+        <option value="1">Ethereum Mainnet</option>
+        <option value="11155111">Ethereum Sepolia Testnet</option>
         <option value="custom">Custom Network</option>
       </select>
-      <div class="help-text">Select the blockchain network or choose custom</div>
     </label>
 
+    <div class="quick-help">
+      💡 <strong>Need help finding network details? </br></strong>   <br>
+      Find RPC & Chain ID - <a href="https://chainlist.org/?testnets=true" target="_blank" class="external-link">
+          Open ChainList  
+      </a>  <br>
+      <br><small>ChainList provides a simple interface to find and add blockchain networks to your wallet.</small>
+    </div>
+
     <label>
-      RPC URL
+      <span class="tooltip">RPC URL</span>
       <input type="text" id="rpcUrl" value="https://polygon-rpc.com" required />
-      <div class="help-text">
-        <strong>Polygon Mainnet:</strong> https://polygon-rpc.com<br>
-        <strong>Polygon Amoy:</strong> https://rpc-amoy.polygon.technology<br>
-        You can use custom RPC URLs from Alchemy, Infura, QuickNode, etc.
-      </div>
     </label>
+    <div class="help-text">
+      This is the connection address to the blockchain network. It's automatically filled based on your network selection, 
+      but you can use a custom URL from providers like Alchemy, Infura, or QuickNode.
+    </div>
 
     <label>
-      Chain ID
+      <span class="tooltip">Chain ID</span>
       <input type="text" id="chainId" value="137" required />
-      <div class="help-text">Network Chain ID (Polygon: 137, Amoy: 80002, Ethereum: 1). Must match the RPC URL network.</div>
     </label>
+    <div class="help-text">
+      A unique number identifying the blockchain network. Must match the RPC URL above.
+      <br><strong>Common Chain IDs:</strong> Polygon = 137, Ethereum = 1, Amoy Testnet = 80002
+    </div>
   </div>
 
+  <!-- Step 2: Transaction Details -->
   <div class="section">
-    <div class="section-title">📝 Step 2: Transaction Details</div>
-
-    <label>
-      From Address (Signer Wallet)
-      <input type="text" id="from" placeholder="0xYourSignerAddress" required />
-      <div class="help-text">The wallet address that will sign this transaction. Paste from API response "signerWallet" field.</div>
-    </label>
-
-    <label>
-      To Address (Contract Address)
-      <input type="text" id="to" placeholder="0xContractAddress" required />
-      <div class="help-text">The smart contract address to interact with. Paste from API response "contractAddress" field.</div>
-    </label>
-
-    <label>
-      Transaction Data (Hex)
-      <textarea id="data" rows="6" placeholder="0x..." required></textarea>
-      <div class="help-text">
-        Encoded transaction data from API response. Paste from "transactionData" field.<br>
-        This contains the function call and parameters (e.g., batchMint, transfer, etc.).
-      </div>
-    </label>
-
-    <label>
-      Value (Native Token Amount)
-      <input type="text" id="value" value="0" />
-      <div class="help-text">Amount of native token to send in ETH/MATIC (usually 0 for contract calls). Example: 0.1 for 0.1 MATIC</div>
-    </label>
-
-    <label>
-      Gas Limit (Optional)
-      <input type="text" id="gasLimit" placeholder="Leave empty for auto-estimate" />
-      <div class="help-text">Maximum gas units for this transaction. Paste from API response "gasEstimation" if provided, or leave empty to auto-estimate.</div>
-    </label>
-
-    <label>
-      Max Priority Fee (Gwei) - Optional
-      <input type="text" id="maxPriorityFee" placeholder="Auto (Amoy: 30 gwei)" />
-      <div class="help-text">Tip for validators in gwei. Leave empty for auto-detection. Amoy requires minimum 25 gwei.</div>
-    </label>
-
-    <label>
-      Max Fee Per Gas (Gwei) - Optional
-      <input type="text" id="maxFeePerGas" placeholder="Auto (Amoy: 50 gwei)" />
-      <div class="help-text">Maximum total gas price in gwei. Leave empty for auto-detection.</div>
-    </label>
-  </div>
-
-  <div class="section">
-    <div class="section-title">🔐 Step 3: Signing Method</div>
+    <div class="section-title">
+      <span class="step-number">2</span>
+      Enter Transaction Details
+    </div>
     
     <label>
-      Choose Signing Method
-      <select id="signingMethod" onchange="toggleSigningMethod()">
-        <option value="metamask">MetaMask (Browser Wallet)</option>
+      Transaction Mode
+      <select id="transactionMode" onchange="toggleTransactionMode()">
+        <option value="general">General Transaction Signing</option>
+        <option value="tokenactions">Token Actions V2 API</option>
       </select>
-      <div class="help-text">Select how you want to sign the transaction</div>
     </label>
+    <div class="help-text">
+      <strong>General:</strong> Sign any blockchain transaction<br>
+      <strong>Token Actions V2:</strong> Specifically for our Token Actions V2 API integration
+    </div>
 
+    <!-- Token Actions Mode -->
+    <div id="tokenActionsFields" style="display: none;">
+      <div class="info-box" style="margin-top: 15px;">
+        <strong>ℹ️ Token Actions V2 Mode:</strong> Copy and paste the transaction details from your API response. 
+        Look for fields: <code>signerWallet</code>, <code>contractAddress</code>, and <code>transactionData</code>.
+      </div>
+
+      <label>
+        Signer Wallet
+        <input type="text" id="tokenActionsFrom" placeholder="0x..." />
+      </label>
+      <div class="help-text">
+        Your wallet address that will sign this transaction.
+        <br>📋 <strong>Copy from API field:</strong> <code>signerWallet</code>
+      </div>
+
+      <label>
+        Contract Address
+        <input type="text" id="tokenActionsTo" placeholder="0x..." />
+      </label>
+      <div class="help-text">
+        The smart contract address from the API response.
+        <br>📋 <strong>Copy from API field:</strong> <code>contractAddress</code>
+      </div>
+
+      <label>
+        Transaction Data
+        <textarea id="tokenActionsData" rows="6" placeholder="0x..."></textarea>
+      </label>
+      <div class="help-text">
+        The encoded transaction data from the API.
+        <br>📋 <strong>Copy from API field:</strong> <code>transactionData</code>
+      </div>
+    </div>
+
+    <!-- General Mode -->
+    <div id="generalFields">
+      <div class="info-box" style="margin-top: 15px;">
+        <strong>ℹ️ General Mode:</strong> Enter the transaction details you want to sign.
+      </div>
+
+      <label>
+        From Address (Your Wallet)
+        <input type="text" id="from" placeholder="0x..." required />
+      </label>
+      <div class="help-text">
+        The wallet address that will sign this transaction (your wallet address).
+      </div>
+
+      <label>
+        To Address (Recipient/Contract)
+        <input type="text" id="to" placeholder="0x..." required />
+      </label>
+      <div class="help-text">
+        The recipient address or smart contract address you're interacting with.
+      </div>
+
+      <label>
+        Transaction Data (Optional)
+        <textarea id="data" rows="6" placeholder="0x (leave as 0x for simple transfers)"></textarea>
+      </label>
+      <div class="help-text">
+        For contract interactions, enter the encoded data here. For simple transfers, leave as "0x".
+      </div>
+    </div>
+
+    <button type="button" class="advanced-toggle" onclick="toggleAdvanced()">
+      <span id="advancedToggleIcon">▶</span> Advanced Options (Optional)
+    </button>
+
+    <div id="advancedSection" class="advanced-section">
+      <p><strong>ℹ️ These fields are optional and auto-detected if left empty.</strong></p>
+      
+      <label>
+        Value (Native Token Amount)
+        <input type="text" id="value" value="0" />
+      </label>
+      <div class="help-text">
+        Amount of native currency to send (ETH, MATIC, etc.). Usually "0" for token operations.
+        <br>Only change this if your transaction requires sending native currency.
+      </div>
+
+      <label>
+        Gas Limit
+        <input type="text" id="gasLimit" placeholder="Auto-estimate" />
+      </label>
+      <div class="help-text">
+        Maximum amount of gas (fee) units for this transaction. Leave empty to auto-estimate.
+        <br>📋 <strong>Copy from API field (if provided):</strong> <code>gasEstimation</code>
+      </div>
+
+      <label>
+        Max Priority Fee (Gwei)
+        <input type="text" id="maxPriorityFee" placeholder="Auto-detect" />
+      </label>
+      <div class="help-text">
+        Tip for validators (miners) in gwei. Leave empty for automatic detection.
+        <br><small>Note: Polygon Amoy requires minimum 25 gwei (we auto-set 30 gwei).</small>
+      </div>
+
+      <label>
+        Max Fee Per Gas (Gwei)
+        <input type="text" id="maxFeePerGas" placeholder="Auto-detect" />
+      </label>
+      <div class="help-text">
+        Maximum total gas price in gwei. Leave empty for automatic detection.
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 3: Signing Method -->
+  <div class="section">
+    <div class="section-title">
+      <span class="step-number">3</span>
+      Choose How to Sign
+    </div>
+    
+    <label>
+      Signing Method
+      <select id="signingMethod" onchange="toggleSigningMethod()">
+        <option value="metamask">🦊 MetaMask Wallet</option>
+        <option value="privatekey">🔑 Private Key (Direct Signing)</option>
+      </select>
+    </label>
+    <div class="help-text">Select how you want to sign the transaction</div>
+
+    <!-- Private Key Section -->
+    <div id="privatekeySection" style="display: none;">
+      <div class="info-box" style="margin-top: 15px;">
+        <strong>🔑 Private Key Signing:</strong> Sign transactions directly using your wallet's private key. 
+       </div>
+    <div class="warning" style="font-size: 18px; padding: 15px;">
+      <strong>Internal Use Only.</strong>
+      This tool is provided for internal reference and development purposes only.
+      It is provided "as-is" without warranty, and it does not constitute legal, financial, or compliance advice.
+      </div>
+      <div class="security-warning" style="margin-top: 15px;">
+        <strong>⚠️ Security Notice:</strong> Your private key gives full control over your wallet. 
+        If you choose to use this method, ensure you're in a secure environment, you could download the HTML file and run it locally.
+      </div>
+
+      <label style="margin-top: 15px;">
+        Your Private Key
+        <input type="password" id="privateKey" placeholder="0x..." />
+      </label>
+      <div class="help-text">
+        <strong>🔐 Important:</strong>
+        <ul style="margin: 5px 0; padding-left: 20px;">
+          <li>Never share your private key with anyone</li>
+          <li>Only use this on trusted, secure tools</li>
+          <li>This key must match your wallet address in Step 2</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- MetaMask Section -->
     <div id="metamaskSection">
-      <div id="metamaskStatus" style="margin-top: 15px; padding: 10px; border-radius: 4px; background: #f9f9f9;"></div>
-      <button id="connectMetamaskBtn" style="background: #f6851b; color: white; margin-top: 10px;">
+      <div class="info-box" style="margin-top: 15px;">
+        <strong>🦊 MetaMask Signing:</strong> MetaMask is a browser wallet that makes signing transactions easy and secure. 
+        You'll see a popup to review and approve the transaction.
+      </div>
+
+      <div id="metamaskStatus" style="margin-top: 15px; padding: 15px; border-radius: 6px; background: #f9f9f9;"></div>
+      
+      <button id="connectMetamaskBtn" class="btn-metamask" style="margin-top: 15px;">
         🦊 Connect MetaMask
       </button>
+
       <div class="help-text" style="margin-top: 10px;">
-        MetaMask will prompt you to connect your wallet and sign the transaction.<br>
-        ⚠️ Make sure MetaMask is installed and unlocked.
+        Don't have MetaMask? 
+        <a href="https://metamask.io/download/" target="_blank" style="color: var(--brand-color); font-weight: 600;">
+          Download it here
+        </a> (it's a free browser extension)
       </div>
     </div>
   </div>
 
+  <!-- Step 4: Sign Transaction -->
   <div class="section">
-    <div class="section-title">✍️ Step 4: Sign Transaction</div>
-    <button id="signBtn">Sign Transaction</button>
-    <button id="copySignedBtn" disabled class="copy-btn">Copy Signed TX</button>
-    <div class="help-text" style="margin-top: 10px;">
-      After signing, you can copy the raw signed transaction or broadcast it directly.
+    <div class="section-title">
+      <span class="step-number">4</span>
+      Sign Your Transaction
     </div>
-  </div>
-
-  <div class="section">
-    <div class="section-title">📤 Step 5: Broadcast to Blockchain</div>
-    <button id="sendBtn" disabled>Send Transaction</button>
-    <div class="help-text" style="margin-top: 10px;">
-      Broadcasts the signed transaction to the blockchain network.
-    </div>
-  </div>
-
-  <div id="output"></div>
-
-  <div id="apiCallSection" class="api-section" style="display: none;">
-    <div class="section-title">🔗 Step 6: Transaction Confirmed</div>
     
-    <div style="margin-top: 15px;">
+    <div class="info-box">
+      <strong>ℹ️ What happens:</strong> This prepares your transaction and signs it with your wallet or private key. 
+      No blockchain action happens yet - this just creates the signed transaction.
+    </div>
+
+    <button id="signBtn" class="btn-primary">✍️ Sign Transaction</button>
+    <button id="copySignedBtn" disabled class="btn-secondary">📋 Copy Signed Transaction</button>
+    
+    <div class="help-text" style="margin-top: 15px;">
+      After signing, you can either broadcast it to the blockchain (Step 5) or copy the signed transaction 
+      to send to our API.
+    </div>
+  </div>
+
+  <!-- Step 5: Broadcast -->
+  <div class="section">
+    <div class="section-title">
+      <span class="step-number">5</span>
+      Broadcast to Blockchain
+    </div>
+    
+    <div class="info-box">
+      <strong>ℹ️ What happens:</strong> This sends your signed transaction to the blockchain network for processing. 
+      Once broadcast, you'll receive a transaction hash to track its status.
+    </div>
+
+    <button id="sendBtn" disabled class="btn-success">📤 Broadcast Transaction</button>
+    
+    <div class="help-text" style="margin-top: 15px;">
+      <strong>Two options after signing:</strong>
+      <ul style="margin: 10px 0; padding-left: 20px;">
+        <li><strong>Option A:</strong> Click "Broadcast Transaction" to send it directly to the blockchain</li>
+        <li><strong>Option B:</strong> Click "Copy Signed Transaction" and send it back to our API</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Output Section -->
+  <div id="output" style="display: none;"></div>
+
+  <!-- Success Section -->
+  <div id="apiCallSection" class="api-section" style="display: none;">
+    <div class="section-title">
+      <span class="step-number">✓</span>
+      Transaction Complete!
+    </div>
+    
+    <div style="margin-top: 20px;">
       <strong>Transaction Hash:</strong>
-      <button class="small-copy-btn" onclick="copyTxHash()">Copy</button>
+      <button class="small-copy-btn" onclick="copyTxHash()">📋 Copy</button>
     </div>
     <div id="txHashDisplay" class="value-display" style="margin-top: 10px;"></div>
+    <div class="help-text">
+      Save this transaction hash! You can use it to track your transaction or send it back to our API.
+    </div>
 
-    <div style="margin-top: 15px;">
-      <strong>API Payload (for logging in backend):</strong>
-      <button class="small-copy-btn" onclick="copyApiPayload()">Copy JSON</button>
+    <div style="margin-top: 20px;">
+      <strong>API Payload (if sending to backend):</strong>
+      <button class="small-copy-btn" onclick="copyApiPayload()">📋 Copy JSON</button>
     </div>
     <pre id="apiPayload" class="value-display" style="margin-top: 10px;"></pre>
 
-    <div style="margin-top: 15px;">
-      <strong>Block Explorer:</strong><br>
-      <a id="explorerLink" href="#" target="_blank" style="color: var(--brand-color); font-weight: 600;">View Transaction on Block Explorer →</a>
+    <div style="margin-top: 20px;">
+      <strong>View on Block Explorer:</strong><br>
+      <a id="explorerLink" href="#" target="_blank" style="display: inline-block; margin-top: 10px; padding: 10px 20px; background: var(--brand-color); color: white; text-decoration: none; border-radius: 6px; font-weight: 600;">
+        🔍 View Transaction Details →
+      </a>
+    </div>
+    <div class="help-text" style="margin-top: 10px;">
+      The block explorer shows your transaction status and details on the blockchain.
+    </div>
     </div>
   </div>
+  <!-- End Main Content -->
+
+  <!-- FAQ Modal -->
+  <div id="faqModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>📚 Help & Information</h2>
+        <button class="close-modal" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+      
+      <!-- Accordion Section 1 -->
+      <div class="accordion">
+        <div class="accordion-header" onclick="toggleAccordion('accordion1')">
+          <span>What is this tool?</span>
+          <span class="accordion-icon" id="accordion1-icon">▼</span>
+        </div>
+        <div class="accordion-content" id="accordion1">
+          <div class="accordion-body">
+            <p>
+              A <strong>secure blockchain transaction signing tool</strong> that works entirely in your browser. 
+            </p>
+            <p style="margin-top: 10px;"><strong>Use it for:</strong></p>
+            <ul style="margin: 5px 0; padding-left: 20px;">
+              <li>Token Actions V2 API integration</li>
+              <li>General blockchain transactions</li>
+              <li>Testing on testnets</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Accordion Section 2 -->
+      <div class="accordion">
+        <div class="accordion-header" onclick="toggleAccordion('accordion2')">
+          <span>Why sign transactions?</span>
+          <span class="accordion-icon" id="accordion2-icon">▼</span>
+        </div>
+        <div class="accordion-content" id="accordion2">
+          <div class="accordion-body">
+            <p>
+              Your digital signature proves you authorized the transaction.
+            </p>
+            <ul style="margin: 10px 0; padding-left: 20px;">
+              <li>✅ Proves wallet ownership</li>
+              <li>✅ Cannot be forged</li>
+              <li>✅ Keeps assets secure</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Accordion Section 3 -->
+      <div class="accordion">
+        <div class="accordion-header" onclick="toggleAccordion('accordion3')">
+          <span>How does it work?</span>
+          <span class="accordion-icon" id="accordion3-icon">▼</span>
+        </div>
+        <div class="accordion-content" id="accordion3">
+          <div class="accordion-body">
+            <p><strong>3 simple steps:</strong></p>
+            <ul style="margin: 10px 0; padding-left: 20px; line-height: 1.7;">
+              <li>📥 Get transaction details</li>
+              <li>✍️ Sign with private key or MetaMask</li>
+              <li>📤 Broadcast or send to API</li>
+            </ul>
+            <div style="background: var(--brand-orange-light); padding: 10px; border-radius: 6px; margin-top: 10px; border-left: 3px solid var(--brand-orange); font-size: 0.85em;">
+              <strong>💡 For Token Actions V2:</strong><br>
+              <small>
+                • Signing only → <code>/payloads</code> endpoint<br>
+                • Broadcast → <code>/transactions</code> endpoint
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Accordion Section 4 -->
+      <div class="accordion">
+        <div class="accordion-header" onclick="toggleAccordion('accordion4')">
+          <span>Blockchain terms</span>
+          <span class="accordion-icon" id="accordion4-icon">▼</span>
+        </div>
+        <div class="accordion-content" id="accordion4">
+          <div class="accordion-body">
+            <div class="glossary-term" style="margin: 8px 0; padding: 6px; background: #f8f9fa; border-radius: 4px;">
+              <strong>Wallet:</strong> Your digital account
+            </div>
+            <div class="glossary-term" style="margin: 8px 0; padding: 6px; background: #f8f9fa; border-radius: 4px;">
+              <strong>Transaction:</strong> Any blockchain action
+            </div>
+            <div class="glossary-term" style="margin: 8px 0; padding: 6px; background: #f8f9fa; border-radius: 4px;">
+              <strong>Signing:</strong> Approving with your private key
+            </div>
+            <div class="glossary-term" style="margin: 8px 0; padding: 6px; background: #f8f9fa; border-radius: 4px;">
+              <strong>Broadcasting:</strong> Sending to blockchain
+            </div>
+            <div class="glossary-term" style="margin: 8px 0; padding: 6px; background: #f8f9fa; border-radius: 4px;">
+              <strong>RPC URL:</strong> Network connection point
+            </div>
+            <div class="glossary-term" style="margin: 8px 0; padding: 6px; background: #f8f9fa; border-radius: 4px;">
+              <strong>Chain ID:</strong> Network identifier number
+            </div>
+            <div class="glossary-term" style="margin: 8px 0; padding: 6px; background: #f8f9fa; border-radius: 4px;">
+              <strong>Gas:</strong> Transaction fee
+            </div>
+            <div class="glossary-term" style="margin: 8px 0; padding: 6px; background: #f8f9fa; border-radius: 4px;">
+              <strong>Transaction Hash:</strong> Unique transaction ID
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- End FAQ Modal -->
 </div>
+<!-- End Page Wrapper -->
 
 <script>
   const signBtn = document.getElementById('signBtn');
@@ -355,9 +1098,57 @@
 
   // Network configuration
   const networks = {
+    1: { name: 'Ethereum Mainnet', rpc: 'https://eth.llamarpc.com', explorer: 'https://etherscan.io' },
+    11155111: { name: 'Ethereum Sepolia Testnet', rpc: 'https://rpc.sepolia.org', explorer: 'https://sepolia.etherscan.io' },
     137: { name: 'Polygon Mainnet', rpc: 'https://polygon-rpc.com', explorer: 'https://polygonscan.com' },
     80002: { name: 'Polygon Amoy Testnet', rpc: 'https://rpc-amoy.polygon.technology', explorer: 'https://amoy.polygonscan.com' }
   };
+
+  // Accordion toggle function
+  function toggleAccordion(id) {
+    const content = document.getElementById(id);
+    const icon = document.getElementById(id + '-icon');
+    
+    if (content.classList.contains('open')) {
+      content.classList.remove('open');
+      icon.classList.remove('open');
+    } else {
+      content.classList.add('open');
+      icon.classList.add('open');
+    }
+  }
+
+  // Modal functions
+  function openModal() {
+    document.getElementById('faqModal').style.display = 'block';
+  }
+
+  function closeModal() {
+    document.getElementById('faqModal').style.display = 'none';
+  }
+
+  // Close modal when clicking outside of it
+  window.onclick = function(event) {
+    const modal = document.getElementById('faqModal');
+    if (event.target === modal) {
+      closeModal();
+    }
+  }
+
+  // Transaction mode toggle
+  function toggleTransactionMode() {
+    const mode = document.getElementById('transactionMode').value;
+    const tokenActionsFields = document.getElementById('tokenActionsFields');
+    const generalFields = document.getElementById('generalFields');
+    
+    if (mode === 'tokenactions') {
+      tokenActionsFields.style.display = 'block';
+      generalFields.style.display = 'none';
+    } else {
+      tokenActionsFields.style.display = 'none';
+      generalFields.style.display = 'block';
+    }
+  }
 
   // Check for MetaMask on page load
   window.addEventListener('load', () => {
@@ -366,14 +1157,16 @@
 
   function checkMetaMask() {
     if (typeof window.ethereum !== 'undefined') {
-      metamaskStatus.innerHTML = '✅ MetaMask detected! Click "Connect MetaMask" to continue.';
+      metamaskStatus.innerHTML = '✅ <strong>MetaMask detected!</strong> Click the button below to connect your wallet.';
       metamaskStatus.style.background = '#d4edda';
       metamaskStatus.style.color = '#155724';
+      metamaskStatus.style.border = '2px solid #c3e6cb';
       connectMetamaskBtn.disabled = false;
     } else {
-      metamaskStatus.innerHTML = '❌ MetaMask not detected. <a href="https://metamask.io/download/" target="_blank" style="color: var(--brand-color); font-weight: 600;">Install MetaMask</a> or use Private Key signing method.';
+      metamaskStatus.innerHTML = '❌ <strong>MetaMask not found.</strong> Please <a href="https://metamask.io/download/" target="_blank" style="color: var(--brand-color); font-weight: 600;">install MetaMask</a> or use the Private Key signing method.';
       metamaskStatus.style.background = '#f8d7da';
       metamaskStatus.style.color = '#721c24';
+      metamaskStatus.style.border = '2px solid #f5c6cb';
       connectMetamaskBtn.disabled = true;
     }
   }
@@ -383,19 +1176,32 @@
     const metamaskSection = document.getElementById('metamaskSection');
     const privatekeySection = document.getElementById('privatekeySection');
     
-    if (method === 'metamask') {
+    if (method === 'privatekey') {
+      privatekeySection.style.display = 'block';
+      metamaskSection.style.display = 'none';
+    } else {
       metamaskSection.style.display = 'block';
       privatekeySection.style.display = 'none';
       checkMetaMask();
+    }
+  }
+
+  function toggleAdvanced() {
+    const section = document.getElementById('advancedSection');
+    const icon = document.getElementById('advancedToggleIcon');
+    
+    if (section.classList.contains('visible')) {
+      section.classList.remove('visible');
+      icon.textContent = '▶';
     } else {
-      metamaskSection.style.display = 'none';
-      privatekeySection.style.display = 'block';
+      section.classList.add('visible');
+      icon.textContent = '▼';
     }
   }
 
   connectMetamaskBtn.addEventListener('click', async () => {
     if (typeof window.ethereum === 'undefined') {
-      alert('❌ MetaMask not detected! Please install MetaMask extension.');
+      alert('❌ MetaMask not detected! Please install the MetaMask browser extension.');
       return;
     }
 
@@ -411,23 +1217,25 @@
         fromInput.value = metamaskAccount;
       }
 
-      metamaskStatus.innerHTML = `✅ Connected to MetaMask!<br>Account: ${metamaskAccount}`;
+      metamaskStatus.innerHTML = `✅ <strong>Connected to MetaMask!</strong><br>Your Wallet: <code>${metamaskAccount}</code>`;
       metamaskStatus.style.background = '#d4edda';
       metamaskStatus.style.color = '#155724';
 
-      // Verify network
+      // Check network
       const chainId = await window.ethereum.request({ method: 'eth_chainId' });
       const chainIdDecimal = parseInt(chainId, 16);
       const expectedChainId = document.getElementById('chainId').value.trim();
       
       if (expectedChainId && chainIdDecimal.toString() !== expectedChainId) {
-        metamaskStatus.innerHTML += `<br>⚠️ Warning: MetaMask is on Chain ID ${chainIdDecimal}, but you selected Chain ID ${expectedChainId}. Please switch networks in MetaMask.`;
+        const networkInfo = networks[chainIdDecimal];
+        metamaskStatus.innerHTML += `<br><br>⚠️ <strong>Network Notice:</strong> MetaMask is currently on ${networkInfo ? networkInfo.name : 'Chain ID ' + chainIdDecimal}, but you selected Chain ID ${expectedChainId}. Please switch networks in MetaMask if needed.`;
         metamaskStatus.style.background = '#fff3cd';
         metamaskStatus.style.color = '#856404';
+        metamaskStatus.style.border = '2px solid #ffeaa7';
       }
 
     } catch (err) {
-      metamaskStatus.innerHTML = `❌ Failed to connect: ${err.message}`;
+      metamaskStatus.innerHTML = `❌ <strong>Connection failed:</strong> ${err.message}`;
       metamaskStatus.style.background = '#f8d7da';
       metamaskStatus.style.color = '#721c24';
       metamaskConnected = false;
@@ -435,18 +1243,18 @@
     }
   });
 
-  // Listen for account changes
+  // Listen for MetaMask account changes
   if (typeof window.ethereum !== 'undefined') {
     window.ethereum.on('accountsChanged', (accounts) => {
       if (accounts.length === 0) {
         metamaskConnected = false;
         metamaskAccount = null;
-        metamaskStatus.innerHTML = '❌ MetaMask disconnected. Please connect again.';
+        metamaskStatus.innerHTML = '❌ <strong>MetaMask disconnected.</strong> Please connect again.';
         metamaskStatus.style.background = '#f8d7da';
         metamaskStatus.style.color = '#721c24';
       } else {
         metamaskAccount = accounts[0];
-        metamaskStatus.innerHTML = `✅ Connected to MetaMask!<br>Account: ${metamaskAccount}`;
+        metamaskStatus.innerHTML = `✅ <strong>Connected to MetaMask!</strong><br>Your Wallet: <code>${metamaskAccount}</code>`;
         document.getElementById('from').value = metamaskAccount;
       }
     });
@@ -465,8 +1273,8 @@
     if (value === 'custom') {
       rpcInput.value = '';
       chainIdInput.value = '';
-      rpcInput.placeholder = 'Enter custom RPC URL';
-      chainIdInput.placeholder = 'Enter chain ID';
+      rpcInput.placeholder = 'Enter RPC URL (find on ChainList)';
+      chainIdInput.placeholder = 'Enter Chain ID';
     } else {
       const network = networks[value];
       rpcInput.value = network.rpc;
@@ -475,6 +1283,7 @@
   }
 
   signBtn.addEventListener('click', async () => {
+    output.style.display = 'block';
     output.textContent = '⏳ Preparing to sign transaction...';
     output.className = '';
     signedTx = null;
@@ -485,34 +1294,45 @@
     const signingMethod = document.getElementById('signingMethod').value;
 
     try {
-      const from       = document.getElementById('from').value.trim();
-      const to         = document.getElementById('to').value.trim();
-      const data       = document.getElementById('data').value.trim() || '0x';
+      // Get transaction details based on mode
+      const mode = document.getElementById('transactionMode').value;
+      let from, to, data;
+      
+      if (mode === 'tokenactions') {
+        from = document.getElementById('tokenActionsFrom').value.trim();
+        to = document.getElementById('tokenActionsTo').value.trim();
+        data = document.getElementById('tokenActionsData').value.trim() || '0x';
+      } else {
+        from = document.getElementById('from').value.trim();
+        to = document.getElementById('to').value.trim();
+        data = document.getElementById('data').value.trim() || '0x';
+      }
+      
       const rpcUrl     = document.getElementById('rpcUrl').value.trim();
       const gasLimit   = document.getElementById('gasLimit').value.trim();
       const value      = document.getElementById('value').value.trim() || '0';
       const expectedChainId = document.getElementById('chainId').value.trim();
 
       // Validation
-      if (!from) throw new Error('Please enter "From Address"');
-      if (!to) throw new Error('Please enter "To Address" (contract address)');
-      if (!rpcUrl) throw new Error('Please enter RPC URL');
-      if (!expectedChainId) throw new Error('Please enter Chain ID');
+      if (!from) throw new Error('Please enter your wallet address in Step 2');
+      if (!to) throw new Error('Please enter the contract address in Step 2');
+      if (!data || data === '0x') throw new Error('Please enter the transaction data in Step 2');
+      if (!rpcUrl) throw new Error('Please enter the RPC URL in Step 1');
+      if (!expectedChainId) throw new Error('Please enter the Chain ID in Step 1');
 
       // Setup based on signing method
       if (signingMethod === 'metamask') {
         // MetaMask signing
         if (!metamaskConnected) {
-          throw new Error('Please connect MetaMask first!');
+          throw new Error('Please connect MetaMask first! Click the "Connect MetaMask" button in Step 3.');
         }
 
         // Verify from address matches MetaMask account
         if (from.toLowerCase() !== metamaskAccount.toLowerCase()) {
           throw new Error(
-            `❌ Address mismatch!\n\n` +
-            `From Address field: ${from}\n` +
-            `MetaMask account: ${metamaskAccount}\n\n` +
-            `Please update the From Address to match your MetaMask account.`
+            `Address mismatch!\n\n` +
+            `The wallet address you entered (${from}) doesn't match your connected MetaMask account (${metamaskAccount}).\n\n` +
+            `Please update the wallet address in Step 2 or connect the correct MetaMask account.`
           );
         }
 
@@ -521,48 +1341,55 @@
         const chainIdDecimal = parseInt(chainId, 16);
         
         if (chainIdDecimal.toString() !== expectedChainId) {
+          const currentNetwork = networks[chainIdDecimal]?.name || `Chain ID ${chainIdDecimal}`;
+          const expectedNetwork = networks[expectedChainId]?.name || `Chain ID ${expectedChainId}`;
           throw new Error(
-            `❌ Network mismatch!\n\n` +
-            `MetaMask Chain ID: ${chainIdDecimal}\n` +
-            `Expected Chain ID: ${expectedChainId}\n\n` +
-            `Please switch to the correct network in MetaMask.`
+            `Network mismatch!\n\n` +
+            `MetaMask is on: ${currentNetwork}\n` +
+            `You selected: ${expectedNetwork}\n\n` +
+            `Please switch to the correct network in MetaMask and try again.`
           );
         }
 
         output.textContent = '🦊 MetaMask ready! Building transaction...';
         provider = new ethers.BrowserProvider(window.ethereum);
-        const signer = await provider.getSigner();
         
       } else {
         // Private key signing
         const key = document.getElementById('privateKey').value.trim();
-        if (!key) throw new Error('Please enter your private key');
+        if (!key) throw new Error('Please enter your private key in Step 3');
 
         // Setup provider & wallet
-        output.textContent = '🔌 Connecting to network...';
+        output.textContent = '🔌 Connecting to blockchain network...';
         provider = new ethers.JsonRpcProvider(rpcUrl);
         wallet   = new ethers.Wallet(key, provider);
 
         // Verify from matches private key
         if (from.toLowerCase() !== wallet.address.toLowerCase()) {
           throw new Error(
-            `❌ Address mismatch!\n\n` +
-            `Expected From Address: ${from}\n` +
-            `Private Key Address: ${wallet.address}\n\n` +
-            `The private key does not match the "From Address" field.`
+            `Address mismatch!\n\n` +
+            `The wallet address you entered (${from}) doesn't match the address from your private key (${wallet.address}).\n\n` +
+            `Please check that your private key is correct.`
           );
         }
 
         // Verify network
-        const network = await provider.getNetwork();
-        
-        if (network.chainId.toString() !== expectedChainId) {
-          throw new Error(
-            `❌ Network mismatch!\n\n` +
-            `RPC returned Chain ID: ${network.chainId}\n` +
-            `Expected Chain ID: ${expectedChainId}\n\n` +
-            `Make sure the RPC URL matches the selected network.`
-          );
+        try {
+          const network = await provider.getNetwork();
+          
+          if (network.chainId.toString() !== expectedChainId) {
+            const networkName = networks[network.chainId]?.name || `Chain ID ${network.chainId}`;
+            const expectedName = networks[expectedChainId]?.name || `Chain ID ${expectedChainId}`;
+            throw new Error(
+              `Network mismatch!\n\n` +
+              `RPC URL returned: ${networkName}\n` +
+              `You selected: ${expectedName}\n\n` +
+              `Please check your network selection and RPC URL.`
+            );
+          }
+        } catch (err) {
+          if (err.message.includes('Network mismatch')) throw err;
+          throw new Error(`Failed to connect to RPC URL. Please check the URL and try again.\n\nError: ${err.message}`);
         }
       }
 
@@ -600,44 +1427,60 @@
       }
       // For other networks, let ethers.js auto-detect gas prices
 
-      output.textContent = '⏳ Populating transaction details (nonce, gas, etc.)...';
+      output.textContent = '⏳ Preparing transaction details (estimating gas, getting nonce, etc.)...';
       let populated, signerAddress;
 
       if (signingMethod === 'metamask') {
         // MetaMask transaction population and signing
         const signer = await provider.getSigner();
         signerAddress = await signer.getAddress();
-        populated = await signer.populateTransaction(tx);
+        
+        try {
+          populated = await signer.populateTransaction(tx);
+        } catch (err) {
+          throw new Error(`Failed to prepare transaction: ${err.message}\n\nThis might mean insufficient funds or invalid transaction data.`);
+        }
 
         output.textContent = 
           '📋 Transaction Details:\n\n' +
           `Network: ${networkName}\n` +
           `From: ${signerAddress}\n` +
           `To: ${to}\n` +
-          `Value: ${value} (${tx.value.toString()} wei)\n` +
+          `Value: ${value} ${networkName.includes('Polygon') ? 'MATIC' : 'ETH'}\n` +
           `Nonce: ${populated.nonce}\n` +
-          `Gas Limit: ${populated.gasLimit}\n` +
-          `Gas Price: ${populated.gasPrice ? ethers.formatUnits(populated.gasPrice, 'gwei') + ' gwei' : 'EIP-1559'}\n\n` +
-          '🦊 Please confirm the transaction in MetaMask...';
+          `Estimated Gas: ${populated.gasLimit}\n\n` +
+          '🦊 Please check MetaMask and approve the transaction...\n\n' +
+          '(A MetaMask popup should appear - if not, click the MetaMask icon in your browser)';
 
-        // MetaMask will show its own confirmation dialog
-        signedTx = await signer.signTransaction(populated);
+        try {
+          // MetaMask will show its own confirmation dialog
+          signedTx = await signer.signTransaction(populated);
+        } catch (err) {
+          if (err.code === 4001 || err.message.includes('User denied')) {
+            throw new Error('Transaction signing was cancelled in MetaMask');
+          }
+          throw new Error(`MetaMask signing failed: ${err.message}`);
+        }
 
         output.textContent =
-          '✅ Transaction Signed Successfully with MetaMask!\n\n' +
+          '✅ Transaction Signed Successfully!\n\n' +
           `Network: ${networkName}\n` +
           `Signer: ${signerAddress}\n` +
           `Nonce: ${populated.nonce}\n` +
           `Gas Limit: ${populated.gasLimit}\n\n` +
-          `Signed Transaction Length: ${signedTx.length} characters\n` +
-          `Preview: ${signedTx.substring(0, 66)}...\n\n` +
-          '✅ You can now:\n' +
-          '• Click "Copy Signed TX" to copy the raw signed transaction\n' +
-          '• Click "Send Transaction" to broadcast it to the blockchain';
+          '🎉 Your transaction is ready!\n\n' +
+          'Next steps:\n' +
+          '• Click "Broadcast Transaction" to send it to the blockchain\n' +
+          '• OR click "Copy Signed Transaction" to send it to your API';
         
       } else {
         // Private key signing
-        populated = await wallet.populateTransaction(tx);
+        try {
+          populated = await wallet.populateTransaction(tx);
+        } catch (err) {
+          throw new Error(`Failed to prepare transaction: ${err.message}\n\nThis might mean insufficient funds or invalid transaction data.`);
+        }
+        
         signerAddress = wallet.address;
 
         output.textContent = 
@@ -645,11 +1488,10 @@
           `Network: ${networkName}\n` +
           `From: ${wallet.address}\n` +
           `To: ${to}\n` +
-          `Value: ${value} (${tx.value.toString()} wei)\n` +
+          `Value: ${value} ${networkName.includes('Polygon') ? 'MATIC' : 'ETH'}\n` +
           `Nonce: ${populated.nonce}\n` +
-          `Gas Limit: ${populated.gasLimit}\n` +
-          `Gas Price: ${populated.gasPrice ? ethers.formatUnits(populated.gasPrice, 'gwei') + ' gwei' : 'EIP-1559'}\n\n` +
-          '🔐 Signing transaction...';
+          `Estimated Gas: ${populated.gasLimit}\n\n` +
+          '🔐 Signing transaction with your private key...';
 
         signedTx = await wallet.signTransaction(populated);
 
@@ -659,11 +1501,10 @@
           `Signer: ${wallet.address}\n` +
           `Nonce: ${populated.nonce}\n` +
           `Gas Limit: ${populated.gasLimit}\n\n` +
-          `Signed Transaction Length: ${signedTx.length} characters\n` +
-          `Preview: ${signedTx.substring(0, 66)}...\n\n` +
-          '✅ You can now:\n' +
-          '• Click "Copy Signed TX" to copy the raw signed transaction\n' +
-          '• Click "Send Transaction" to broadcast it to the blockchain';
+          '🎉 Your transaction is ready!\n\n' +
+          'Next steps:\n' +
+          '• Click "Broadcast Transaction" to send it to the blockchain\n' +
+          '• OR click "Copy Signed Transaction" to send it to your API';
       }
       
       output.className = 'success';
@@ -679,7 +1520,7 @@
 
   sendBtn.addEventListener('click', async () => {
     if (!signedTx) {
-      output.textContent = '❌ No signed transaction available. Please sign first.';
+      output.textContent = '❌ No signed transaction available. Please sign the transaction first (Step 4).';
       output.className = 'error';
       return;
     }
@@ -687,19 +1528,21 @@
     const chainId = document.getElementById('chainId').value.trim();
     const networkName = networks[chainId]?.name || `Chain ID ${chainId}`;
 
-    output.textContent = `📤 Broadcasting transaction to ${networkName}...\n\nThis may take a few seconds...`;
-    output.className = '';
+    output.textContent = `📤 Broadcasting transaction to ${networkName}...\n\nPlease wait, this may take a few seconds...`;
+    output.className = 'warning';
+    output.style.display = 'block';
     
     try {
       const txResponse = await provider.broadcastTransaction(signedTx);
       transactionHash = txResponse.hash;
       
       output.textContent =
-        '✅ Transaction Broadcasted!\n\n' +
+        '✅ Transaction Broadcast Successfully!\n\n' +
         `Network: ${networkName}\n` +
         `Transaction Hash: ${txResponse.hash}\n\n` +
-        '⏳ Waiting for blockchain confirmation...\n' +
-        'This may take a few seconds to a few minutes depending on the network.';
+        '⏳ Waiting for blockchain confirmation...\n\n' +
+        'This usually takes 10-30 seconds, but can be longer during network congestion.\n' +
+        'Please be patient...';
       
       output.className = 'warning';
 
@@ -712,40 +1555,67 @@
       document.getElementById('apiPayload').textContent = JSON.stringify({ txHash: txResponse.hash }, null, 2);
       apiCallSection.style.display = 'block';
 
-      // Wait for confirmation
-      const receipt = await txResponse.wait();
+      // Wait for confirmation with better error handling
+      let receipt;
+      try {
+        receipt = await txResponse.wait(1);
+      } catch (waitErr) {
+        // Transaction might still be pending, show the hash anyway
+        output.textContent =
+          '⚠️ Transaction submitted, but confirmation timed out\n\n' +
+          `Network: ${networkName}\n` +
+          `Transaction Hash: ${txResponse.hash}\n\n` +
+          `The transaction was sent to the blockchain, but we couldn't confirm it yet.\n` +
+          `You can track it using the transaction hash above or check the block explorer.\n\n` +
+          `📋 Scroll down to copy the transaction hash.`;
+        output.className = 'warning';
+        return;
+      }
       
-      if (receipt.status === 1) {
+      if (receipt && receipt.status === 1) {
         output.textContent =
           '🎉 Transaction Confirmed Successfully!\n\n' +
           `Network: ${networkName}\n` +
           `Transaction Hash: ${txResponse.hash}\n` +
           `Block Number: ${receipt.blockNumber}\n` +
-          `Gas Used: ${receipt.gasUsed.toString()}\n` +
-          `Effective Gas Price: ${ethers.formatUnits(receipt.gasPrice || 0, 'gwei')} gwei\n` +
+          `Gas Used: ${receipt.gasUsed.toString()} units\n` +
           `Status: Success ✅\n\n` +
-          '👇 Scroll down to see transaction details and block explorer link.';
+          '👇 Scroll down to copy the transaction hash or view on block explorer.';
         output.className = 'success';
       } else {
         output.textContent =
-          '❌ Transaction Failed!\n\n' +
+          '❌ Transaction Failed\n\n' +
           `Network: ${networkName}\n` +
           `Transaction Hash: ${txResponse.hash}\n` +
           `Block Number: ${receipt.blockNumber}\n` +
           `Status: Failed/Reverted ❌\n\n` +
-          'The transaction was mined but reverted. Check the block explorer for details.';
+          'The transaction was included in the blockchain but failed to execute.\n' +
+          'Check the block explorer for details about why it failed.';
         output.className = 'error';
       }
 
     } catch (err) {
-      output.textContent = 
-        `❌ Error broadcasting transaction:\n\n${err.message || err}\n\n` +
-        'Common issues:\n' +
-        '• Insufficient funds for gas\n' +
-        '• Transaction reverted (check contract logic)\n' +
-        '• Network congestion or RPC issues\n' +
-        '• Nonce already used\n' +
-        '• Invalid transaction data';
+      let errorMessage = '❌ Failed to broadcast transaction\n\n';
+      
+      if (err.code === 'INSUFFICIENT_FUNDS') {
+        errorMessage += 'Insufficient funds: Your wallet doesn\'t have enough balance to cover the transaction fee (gas).';
+      } else if (err.code === 'NONCE_EXPIRED') {
+        errorMessage += 'This transaction nonce has already been used. Please sign a new transaction.';
+      } else if (err.code === 'REPLACEMENT_UNDERPRICED') {
+        errorMessage += 'A transaction with this nonce already exists with a higher gas price.';
+      } else if (err.message.includes('network') || err.message.includes('timeout')) {
+        errorMessage += 'Network error: Please check your internet connection and RPC URL, then try again.';
+      } else {
+        errorMessage += err.message || err;
+      }
+      
+      errorMessage += '\n\nCommon solutions:\n';
+      errorMessage += '• Check your wallet has enough balance for gas fees\n';
+      errorMessage += '• Try increasing the gas price in Advanced Options\n';
+      errorMessage += '• Verify the RPC URL is working\n';
+      errorMessage += '• Sign a fresh transaction if you\'ve already broadcast one';
+      
+      output.textContent = errorMessage;
       output.className = 'error';
       console.error(err);
     }
@@ -753,22 +1623,33 @@
 
   copySignedBtn.addEventListener('click', () => {
     if (!signedTx) {
-      alert('❌ No signed transaction available!');
+      alert('❌ No signed transaction available! Please sign the transaction first.');
       return;
     }
-    navigator.clipboard.writeText(signedTx);
-    alert('✅ Signed transaction copied to clipboard!\n\nYou can now use this raw signed transaction with any RPC endpoint or tool.');
+    
+    navigator.clipboard.writeText(signedTx).then(() => {
+      alert('✅ Signed transaction copied to clipboard!\n\nYou can now paste this into your API request or use it with any blockchain tool.');
+    }).catch(err => {
+      alert('❌ Failed to copy. Please try again.');
+      console.error(err);
+    });
   });
 
   function copyTxHash() {
-    navigator.clipboard.writeText(transactionHash);
-    alert('✅ Transaction hash copied to clipboard!');
+    navigator.clipboard.writeText(transactionHash).then(() => {
+      alert('✅ Transaction hash copied to clipboard!');
+    }).catch(err => {
+      alert('❌ Failed to copy. Please try again.');
+    });
   }
 
   function copyApiPayload() {
     const payload = JSON.stringify({ txHash: transactionHash }, null, 2);
-    navigator.clipboard.writeText(payload);
-    alert('✅ API payload copied to clipboard!');
+    navigator.clipboard.writeText(payload).then(() => {
+      alert('✅ API payload copied to clipboard!\n\nYou can now send this to your backend API.');
+    }).catch(err => {
+      alert('❌ Failed to copy. Please try again.');
+    });
   }
 </script>
 </body>
