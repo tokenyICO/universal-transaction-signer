@@ -830,17 +830,21 @@
         <option value="privatekey">🔑 Private Key (Direct Signing)</option>
       </select>
     </label>
+    <div class="help-text">Select how you want to sign the transaction</div>
 
     <!-- Private Key Section -->
     <div id="privatekeySection" style="display: none;">
       <div class="info-box" style="margin-top: 15px;">
         <strong>🔑 Private Key Signing:</strong> Sign transactions directly using your wallet's private key. 
-        This works immediately without any additional setup.
+       </div>
+    <div class="warning" style="font-size: 18px; padding: 15px;">
+      <strong>Internal Use Only.</strong>
+      This tool is provided for internal reference and development purposes only.
+      It is provided "as-is" without warranty, and it does not constitute legal, financial, or compliance advice.
       </div>
-
       <div class="security-warning" style="margin-top: 15px;">
         <strong>⚠️ Security Notice:</strong> Your private key gives full control over your wallet. 
-        Only enter it on trusted tools. This page runs entirely in your browser - no data is sent anywhere.
+        If you choose to use this method, ensure you're in a secure environment, you could download the HTML file and run it locally.
       </div>
 
       <label style="margin-top: 15px;">
