@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -868,6 +868,14 @@
         You'll see a popup to review and approve the transaction.
       </div>
 
+      <div class="warning" style="margin-top: 15px; padding: 15px; border-radius: 6px; font-size: 14px;">
+        <strong>⚠️ Important Note:</strong> MetaMask can only sign <strong>and broadcast</strong> transactions together. 
+        It cannot sign-only without broadcasting to the blockchain.
+        <br><br>
+        <strong>Need to sign without broadcasting?</strong> Use the <strong>Private Key</strong> signing method instead, 
+        which allows you to sign the transaction and manually copy the signed data before broadcasting.
+      </div>
+
       <div id="metamaskStatus" style="margin-top: 15px; padding: 15px; border-radius: 6px; background: #f9f9f9;"></div>
       
       <button id="connectMetamaskBtn" class="btn-metamask" style="margin-top: 15px;">
@@ -916,7 +924,7 @@
       Once broadcast, you'll receive a transaction hash to track its status.
     </div>
 
-    <button id="sendBtn" disabled class="btn-success">📤 Broadcast Transaction</button>
+    <button id="sendBtn" disabled class="btn-success" style="display: none;">Broadcast Transaction</button>
     
     <div class="help-text" style="margin-top: 15px;">
       <strong>Two options after signing:</strong>
@@ -1100,9 +1108,37 @@
   const networks = {
     1: { name: 'Ethereum Mainnet', rpc: 'https://eth.llamarpc.com', explorer: 'https://etherscan.io' },
     11155111: { name: 'Ethereum Sepolia Testnet', rpc: 'https://rpc.sepolia.org', explorer: 'https://sepolia.etherscan.io' },
-    137: { name: 'Polygon Mainnet', rpc: 'https://polygon-rpc.com', explorer: 'https://polygonscan.com' },
+    137: { name: 'Polygon Mainnet', rpc: 'https://rpc-mainnet.matic.quiknode.pro', explorer: 'https://polygonscan.com' },
     80002: { name: 'Polygon Amoy Testnet', rpc: 'https://rpc-amoy.polygon.technology', explorer: 'https://amoy.polygonscan.com' }
   };
+
+  // Helper function for RPC error messages
+  function handleRpcError(err, context = '') {
+    let errorMsg = context ? `Failed to ${context}:\n\n` : 'Operation failed:\n\n';
+    
+    if (err.message.includes('Batch size too large') || err.code === -32062) {
+      errorMsg += 'RPC Provider Error: Batch size limit exceeded\n\n' +
+                 'The RPC provider you selected has strict limits.\n' +
+                 'Please go back to Step 1 and select a different RPC provider.\n' +
+                 'Try using Alchemy, Infura, or another public RPC.';
+    } else if (err.message.includes('failed to detect network') || err.message.includes('cannot start up')) {
+      errorMsg += 'RPC Provider Error: Cannot connect\n\n' +
+                 'The RPC provider is not responding or is unreachable.\n' +
+                 'This usually means:\n' +
+                 '• The RPC URL is wrong\n' +
+                 '• The node is down or not started\n' +
+                 '• Network connection issues\n\n' +
+                 'Please try a different RPC provider from Step 1.';
+    } else if (err.code === 'INSUFFICIENT_FUNDS') {
+      errorMsg += 'Insufficient funds\n\n' +
+                 'Your wallet doesn\'t have enough balance to cover the transaction and gas fees.';
+    } else {
+      errorMsg += err.message + '\n\n' +
+                 'This might mean insufficient funds, invalid transaction data, or RPC issues.';
+    }
+    
+    return errorMsg;
+  }
 
   // Accordion toggle function
   function toggleAccordion(id) {
@@ -1217,22 +1253,65 @@
         fromInput.value = metamaskAccount;
       }
 
-      metamaskStatus.innerHTML = `✅ <strong>Connected to MetaMask!</strong><br>Your Wallet: <code>${metamaskAccount}</code>`;
+      // Get the chain ID selected in Step 1
+      const selectedChainId = document.getElementById('chainId').value.trim();
+      
+      if (!selectedChainId) {
+        metamaskStatus.innerHTML = `❌ <strong>Please select a network in Step 1 first!</strong>`;
+        metamaskStatus.style.background = '#f8d7da';
+        metamaskStatus.style.color = '#721c24';
+        return;
+      }
+
+      // Check current MetaMask network
+      const currentChainId = await window.ethereum.request({ method: 'eth_chainId' });
+      const currentChainIdDecimal = parseInt(currentChainId, 16);
+      
+      // If MetaMask is on a different network, request to switch
+      if (currentChainIdDecimal.toString() !== selectedChainId) {
+        try {
+          await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0x' + parseInt(selectedChainId).toString(16) }],
+          });
+        } catch (switchError) {
+          // This error code indicates that the chain has not been added to MetaMask
+          if (switchError.code === 4902) {
+            const networkInfo = networks[selectedChainId];
+            if (networkInfo) {
+              try {
+                await window.ethereum.request({
+                  method: 'wallet_addEthereumChain',
+                  params: [{
+                    chainId: '0x' + parseInt(selectedChainId).toString(16),
+                    chainName: networkInfo.name,
+                    rpcUrls: [networkInfo.rpc],
+                    blockExplorerUrls: [networkInfo.explorer],
+                    nativeCurrency: {
+                      name: networkInfo.name.includes('Polygon') ? 'MATIC' : 'ETH',
+                      symbol: networkInfo.name.includes('Polygon') ? 'MATIC' : 'ETH',
+                      decimals: 18
+                    }
+                  }]
+                });
+              } catch (addError) {
+                throw new Error(`Failed to add network to MetaMask: ${addError.message}`);
+              }
+            } else {
+              throw new Error(`Network not found. Please add Chain ID ${selectedChainId} to MetaMask manually.`);
+            }
+          } else {
+            throw switchError;
+          }
+        }
+      }
+      
+      const networkInfo = networks[selectedChainId];
+      const networkName = networkInfo ? networkInfo.name : `Chain ID ${selectedChainId}`;
+      
+      metamaskStatus.innerHTML = `✅ <strong>Connected to MetaMask!</strong><br>Your Wallet: <code>${metamaskAccount}</code><br>Network: <strong>${networkName}</strong>`;
       metamaskStatus.style.background = '#d4edda';
       metamaskStatus.style.color = '#155724';
-
-      // Check network
-      const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-      const chainIdDecimal = parseInt(chainId, 16);
-      const expectedChainId = document.getElementById('chainId').value.trim();
-      
-      if (expectedChainId && chainIdDecimal.toString() !== expectedChainId) {
-        const networkInfo = networks[chainIdDecimal];
-        metamaskStatus.innerHTML += `<br><br>⚠️ <strong>Network Notice:</strong> MetaMask is currently on ${networkInfo ? networkInfo.name : 'Chain ID ' + chainIdDecimal}, but you selected Chain ID ${expectedChainId}. Please switch networks in MetaMask if needed.`;
-        metamaskStatus.style.background = '#fff3cd';
-        metamaskStatus.style.color = '#856404';
-        metamaskStatus.style.border = '2px solid #ffeaa7';
-      }
 
     } catch (err) {
       metamaskStatus.innerHTML = `❌ <strong>Connection failed:</strong> ${err.message}`;
@@ -1259,8 +1338,18 @@
       }
     });
 
-    window.ethereum.on('chainChanged', () => {
-      window.location.reload();
+    window.ethereum.on('chainChanged', async (chainIdHex) => {
+      const chainIdDecimal = parseInt(chainIdHex, 16);
+      document.getElementById('chainId').value = chainIdDecimal.toString();
+      
+      const networkInfo = networks[chainIdDecimal];
+      const networkName = networkInfo ? networkInfo.name : `Chain ID ${chainIdDecimal}`;
+      
+      if (metamaskConnected && metamaskAccount) {
+        metamaskStatus.innerHTML = `✅ <strong>Connected to MetaMask!</strong><br>Your Wallet: <code>${metamaskAccount}</code><br>Network: <strong>${networkName}</strong>`;
+        metamaskStatus.style.background = '#d4edda';
+        metamaskStatus.style.color = '#155724';
+      }
     });
   }
 
@@ -1282,12 +1371,31 @@
     }
   }
 
+  // Auto-copy function
+  function autoCopyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+      output.textContent += '\n\nSigned transaction automatically copied to clipboard!';
+    }).catch(err => {
+      console.error('Auto-copy failed:', err);
+    });
+  }
+
+  // Auto-copy function
+  function autoCopyToClipboard(text, successMessage) {
+    navigator.clipboard.writeText(text).then(() => {
+      output.textContent += '\n\nSigned transaction automatically copied to clipboard!';
+    }).catch(err => {
+      console.error('Auto-copy failed:', err);
+    });
+  }
+
   signBtn.addEventListener('click', async () => {
     output.style.display = 'block';
     output.textContent = '⏳ Preparing to sign transaction...';
     output.className = '';
     signedTx = null;
     sendBtn.disabled = true;
+    sendBtn.style.display = 'none';
     copySignedBtn.disabled = true;
     apiCallSection.style.display = 'none';
 
@@ -1361,8 +1469,19 @@
 
         // Setup provider & wallet
         output.textContent = '🔌 Connecting to blockchain network...';
-        provider = new ethers.JsonRpcProvider(rpcUrl);
-        wallet   = new ethers.Wallet(key, provider);
+        
+        try {
+          provider = new ethers.JsonRpcProvider(rpcUrl);
+        } catch (err) {
+          throw new Error(
+            `Failed to create RPC connection\n\n` +
+            `The RPC URL might be incorrect or unreachable.\n` +
+            `Please check the URL and try a different RPC provider.\n\n` +
+            `Error: ${err.message}`
+          );
+        }
+        
+        wallet = new ethers.Wallet(key, provider);
 
         // Verify from matches private key
         if (from.toLowerCase() !== wallet.address.toLowerCase()) {
@@ -1389,7 +1508,7 @@
           }
         } catch (err) {
           if (err.message.includes('Network mismatch')) throw err;
-          throw new Error(`Failed to connect to RPC URL. Please check the URL and try again.\n\nError: ${err.message}`);
+          throw new Error(handleRpcError(err, 'connect to RPC URL'));
         }
       }
 
@@ -1438,7 +1557,26 @@
         try {
           populated = await signer.populateTransaction(tx);
         } catch (err) {
-          throw new Error(`Failed to prepare transaction: ${err.message}\n\nThis might mean insufficient funds or invalid transaction data.`);
+          let errorMsg = 'Failed to prepare transaction:\n\n';
+          
+          if (err.message.includes('Batch size too large') || err.code === -32062) {
+            errorMsg += ' RPC Provider Error: Batch size limit exceeded\n\n' +
+                       'The RPC provider you selected has strict limits.\n' +
+                       ' Please go back to Step 1 and select a different RPC provider.\n' +
+                       'Try using Alchemy, Infura, or another public RPC.';
+          } else if (err.message.includes('failed to detect network') || err.message.includes('cannot start up')) {
+            errorMsg += '  RPC Provider Error: Cannot connect\n\n' +
+                       'The RPC provider is not responding.\n' +
+                       '  Please go back to Step 1 and select a different RPC provider.';
+          } else if (err.code === 'INSUFFICIENT_FUNDS') {
+            errorMsg += '  Insufficient funds\n\n' +
+                       'Your wallet doesn\'t have enough balance to cover the transaction and gas fees.';
+          } else {
+            errorMsg += err.message + '\n\n' +
+                       'This might mean insufficient funds, invalid transaction data, or RPC issues.';
+          }
+          
+          throw new Error(errorMsg);
         }
 
         output.textContent = 
@@ -1453,32 +1591,125 @@
           '(A MetaMask popup should appear - if not, click the MetaMask icon in your browser)';
 
         try {
-          // MetaMask will show its own confirmation dialog
-          signedTx = await signer.signTransaction(populated);
-        } catch (err) {
-          if (err.code === 4001 || err.message.includes('User denied')) {
-            throw new Error('Transaction signing was cancelled in MetaMask');
-          }
-          throw new Error(`MetaMask signing failed: ${err.message}`);
-        }
+          // MetaMask only supports sendTransaction (sign + broadcast together)
+          output.textContent += '\n\n⏳ Signing and broadcasting transaction...\n(MetaMask signs and broadcasts in one step)';
+          const txResponse = await signer.sendTransaction(populated);
+          transactionHash = txResponse.hash;
+          
+          // Determine explorer URL
+          const explorerUrl = networks[chainId]?.explorer || `https://etherscan.io`;
+          
+          output.textContent =
+            '✅ Transaction Sent Successfully!\n\n' +
+            `Network: ${networkName}\n` +
+            `Signer: ${signerAddress}\n` +
+            `Transaction Hash: ${txResponse.hash}\n` +
+            `Nonce: ${populated.nonce}\n` +
+            `Gas Limit: ${populated.gasLimit}\n\n` +
+            '⏳ Waiting for blockchain confirmation...\n\n' +
+            'This usually takes 10-30 seconds, but can be longer during network congestion.\n' +
+            'Please be patient...';
+          
+          output.className = 'warning';
+          
+          // Update API section
+          document.getElementById('txHashDisplay').textContent = txResponse.hash;
+          document.getElementById('explorerLink').href = `${explorerUrl}/tx/${txResponse.hash}`;
+          document.getElementById('apiPayload').textContent = JSON.stringify({ txHash: txResponse.hash }, null, 2);
+          apiCallSection.style.display = 'block';
 
-        output.textContent =
-          '✅ Transaction Signed Successfully!\n\n' +
-          `Network: ${networkName}\n` +
-          `Signer: ${signerAddress}\n` +
-          `Nonce: ${populated.nonce}\n` +
-          `Gas Limit: ${populated.gasLimit}\n\n` +
-          '🎉 Your transaction is ready!\n\n' +
-          'Next steps:\n' +
-          '• Click "Broadcast Transaction" to send it to the blockchain\n' +
-          '• OR click "Copy Signed Transaction" to send it to your API';
+          // Wait for confirmation
+          let receipt;
+          try {
+            receipt = await txResponse.wait(1);
+          } catch (waitErr) {
+            output.textContent =
+              '⚠️ Transaction submitted, but confirmation timed out\n\n' +
+              `Network: ${networkName}\n` +
+              `Transaction Hash: ${txResponse.hash}\n\n` +
+              `The transaction was sent to the blockchain, but we couldn't confirm it yet.\n` +
+              `You can track it using the transaction hash above or check the block explorer.\n\n` +
+              `📋 Scroll down to copy the transaction hash.`;
+            output.className = 'warning';
+            sendBtn.disabled = true;
+            copySignedBtn.disabled = true;
+            return;
+          }
+          
+          if (receipt && receipt.status === 1) {
+            output.textContent =
+              '🎉 Transaction Confirmed Successfully!\n\n' +
+              `Network: ${networkName}\n` +
+              `Transaction Hash: ${txResponse.hash}\n` +
+              `Block Number: ${receipt.blockNumber}\n` +
+              `Gas Used: ${receipt.gasUsed.toString()} units\n` +
+              `Status: Success ✅\n\n` +
+              '👇 Scroll down to copy the transaction hash or view on block explorer.';
+            output.className = 'success';
+          } else {
+            output.textContent =
+              '❌ Transaction Failed\n\n' +
+              `Network: ${networkName}\n` +
+              `Transaction Hash: ${txResponse.hash}\n` +
+              `Block Number: ${receipt.blockNumber}\n` +
+              `Status: Failed/Reverted ❌\n\n` +
+              'The transaction was included in the blockchain but failed to execute.\n' +
+              'Check the block explorer for details about why it failed.';
+            output.className = 'error';
+          }
+          
+          // Disable buttons since transaction is already broadcast
+          signedTx = null; // Clear signed tx since MetaMask already broadcast it
+          sendBtn.disabled = true;
+          copySignedBtn.disabled = true;
+          
+        } catch (err) {
+          if (err.code === 4001 || err.message.includes('User denied') || err.message.includes('User rejected')) {
+            throw new Error('Transaction was cancelled in MetaMask');
+          }
+          
+          let errorMessage = 'MetaMask transaction failed: ';
+          
+          if (err.code === 'INSUFFICIENT_FUNDS') {
+            errorMessage += 'Insufficient funds - Your wallet doesn\'t have enough balance to cover the transaction fee (gas).';
+          } else if (err.code === 'NONCE_EXPIRED') {
+            errorMessage += 'This transaction nonce has already been used. Please try again with a new transaction.';
+          } else if (err.code === 'REPLACEMENT_UNDERPRICED') {
+            errorMessage += 'A transaction with this nonce already exists with a higher gas price.';
+          } else if (err.message.includes('gas required exceeds allowance')) {
+            errorMessage += 'Out of gas - Try increasing the gas limit in Advanced Options.';
+          } else {
+            errorMessage += err.message || err;
+          }
+          
+          throw new Error(errorMessage);
+        }
         
       } else {
         // Private key signing
         try {
           populated = await wallet.populateTransaction(tx);
         } catch (err) {
-          throw new Error(`Failed to prepare transaction: ${err.message}\n\nThis might mean insufficient funds or invalid transaction data.`);
+          let errorMsg = 'Failed to prepare transaction:\n\n';
+          
+          if (err.message.includes('Batch size too large') || err.code === -32062) {
+            errorMsg += '  RPC Provider Error: Batch size limit exceeded\n\n' +
+                       'The RPC provider you selected has strict limits.\n' +
+                       '🔄 Please go back to Step 1 and select a different RPC provider.\n' +
+                       'Try using Alchemy, Infura, or another public RPC.';
+          } else if (err.message.includes('failed to detect network') || err.message.includes('cannot start up')) {
+            errorMsg += '  RPC Provider Error: Cannot connect\n\n' +
+                       'The RPC provider is not responding.\n' +
+                       '🔄 Please go back to Step 1 and select a different RPC provider.';
+          } else if (err.code === 'INSUFFICIENT_FUNDS') {
+            errorMsg += '  Insufficient funds\n\n' +
+                       'Your wallet doesn\'t have enough balance to cover the transaction and gas fees.';
+          } else {
+            errorMsg += err.message + '\n\n' +
+                       'This might mean insufficient funds, invalid transaction data, or RPC issues.';
+          }
+          
+          throw new Error(errorMsg);
         }
         
         signerAddress = wallet.address;
@@ -1496,23 +1727,27 @@
         signedTx = await wallet.signTransaction(populated);
 
         output.textContent =
-          '✅ Transaction Signed Successfully!\n\n' +
+          'Transaction Signed Successfully!\n\n' +
           `Network: ${networkName}\n` +
           `Signer: ${wallet.address}\n` +
           `Nonce: ${populated.nonce}\n` +
           `Gas Limit: ${populated.gasLimit}\n\n` +
-          '🎉 Your transaction is ready!\n\n' +
+          'Your transaction is ready!\n\n' +
           'Next steps:\n' +
           '• Click "Broadcast Transaction" to send it to the blockchain\n' +
           '• OR click "Copy Signed Transaction" to send it to your API';
+        
+        // Auto-copy signed transaction to clipboard
+        autoCopyToClipboard(signedTx);
       }
       
       output.className = 'success';
       sendBtn.disabled = false;
+      sendBtn.style.display = 'inline-block';
       copySignedBtn.disabled = false;
 
     } catch (err) {
-      output.textContent = `❌ Error: ${err.message || err}`;
+      output.textContent = `Error: ${err.message || err}`;
       output.className = 'error';
       console.error(err);
     }
@@ -1520,7 +1755,7 @@
 
   sendBtn.addEventListener('click', async () => {
     if (!signedTx) {
-      output.textContent = '❌ No signed transaction available. Please sign the transaction first (Step 4).';
+      output.textContent = '  No signed transaction available. Please sign the transaction first (Step 4).';
       output.className = 'error';
       return;
     }
@@ -1584,18 +1819,18 @@
         output.className = 'success';
       } else {
         output.textContent =
-          '❌ Transaction Failed\n\n' +
+          '  Transaction Failed\n\n' +
           `Network: ${networkName}\n` +
           `Transaction Hash: ${txResponse.hash}\n` +
           `Block Number: ${receipt.blockNumber}\n` +
-          `Status: Failed/Reverted ❌\n\n` +
+          `Status: Failed/Reverted  \n\n` +
           'The transaction was included in the blockchain but failed to execute.\n' +
           'Check the block explorer for details about why it failed.';
         output.className = 'error';
       }
 
     } catch (err) {
-      let errorMessage = '❌ Failed to broadcast transaction\n\n';
+      let errorMessage = '  Failed to broadcast transaction\n\n';
       
       if (err.code === 'INSUFFICIENT_FUNDS') {
         errorMessage += 'Insufficient funds: Your wallet doesn\'t have enough balance to cover the transaction fee (gas).';
@@ -1623,32 +1858,32 @@
 
   copySignedBtn.addEventListener('click', () => {
     if (!signedTx) {
-      alert('❌ No signed transaction available! Please sign the transaction first.');
+      alert('  No signed transaction available! Please sign the transaction first.');
       return;
     }
     
     navigator.clipboard.writeText(signedTx).then(() => {
-      alert('✅ Signed transaction copied to clipboard!\n\nYou can now paste this into your API request or use it with any blockchain tool.');
+      alert('  Signed transaction copied to clipboard!\n\nYou can now paste this into your API request or use it with any blockchain tool.');
     }).catch(err => {
-      alert('❌ Failed to copy. Please try again.');
+      alert(' Failed to copy. Please try again.');
       console.error(err);
     });
   });
 
   function copyTxHash() {
     navigator.clipboard.writeText(transactionHash).then(() => {
-      alert('✅ Transaction hash copied to clipboard!');
+      alert('  Transaction hash copied to clipboard!');
     }).catch(err => {
-      alert('❌ Failed to copy. Please try again.');
+      alert('  Failed to copy. Please try again.');
     });
   }
 
   function copyApiPayload() {
     const payload = JSON.stringify({ txHash: transactionHash }, null, 2);
     navigator.clipboard.writeText(payload).then(() => {
-      alert('✅ API payload copied to clipboard!\n\nYou can now send this to your backend API.');
+      alert('  API payload copied to clipboard!\n\nYou can now send this to your backend API.');
     }).catch(err => {
-      alert('❌ Failed to copy. Please try again.');
+      alert('  Failed to copy. Please try again.');
     });
   }
 </script>
