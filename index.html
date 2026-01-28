@@ -656,6 +656,8 @@
         <option value="80002">Polygon Amoy Testnet (For Testing)</option>
         <option value="1">Ethereum Mainnet</option>
         <option value="11155111">Ethereum Sepolia Testnet</option>
+        <option value="8453">Base Mainnet</option>
+        <option value="84532">Base Sepolia Testnet</option>
         <option value="custom">Custom Network</option>
       </select>
     </label>
@@ -683,7 +685,7 @@
     </label>
     <div class="help-text">
       A unique number identifying the blockchain network. Must match the RPC URL above.
-      <br><strong>Common Chain IDs:</strong> Polygon = 137, Ethereum = 1, Amoy Testnet = 80002
+      <br><strong>Common Chain IDs:</strong> Polygon = 137, Ethereum = 1, Amoy Testnet = 80002, Base = 8453, Base Sepolia = 84532
     </div>
   </div>
 
@@ -1059,7 +1061,9 @@
     1: { name: 'Ethereum Mainnet', rpc: 'https://eth.llamarpc.com', explorer: 'https://etherscan.io' },
     11155111: { name: 'Ethereum Sepolia Testnet', rpc: 'https://rpc.sepolia.org', explorer: 'https://sepolia.etherscan.io' },
     137: { name: 'Polygon Mainnet', rpc: 'https://rpc-mainnet.matic.quiknode.pro', explorer: 'https://polygonscan.com' },
-    80002: { name: 'Polygon Amoy Testnet', rpc: 'https://rpc-amoy.polygon.technology', explorer: 'https://amoy.polygonscan.com' }
+    80002: { name: 'Polygon Amoy Testnet', rpc: 'https://rpc-amoy.polygon.technology', explorer: 'https://amoy.polygonscan.com' },
+    8453: { name: 'Base Mainnet', rpc: 'https://mainnet.base.org', explorer: 'https://basescan.org' },
+    84532: { name: 'Base Sepolia Testnet', rpc: 'https://sepolia.base.org', explorer: 'https://sepolia.basescan.org' }
   };
 
   // Helper function for RPC error messages
