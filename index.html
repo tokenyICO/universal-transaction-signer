@@ -670,7 +670,7 @@
 
     <label>
       <span class="tooltip">RPC URL</span>
-      <input type="text" id="rpcUrl" value="https://polygon-rpc.com" required />
+      <input type="text" id="rpcUrl" value="https://polygon-public.nodies.app" required />
     </label>
     <div class="help-text">
       This is the connection address to the blockchain network. It's automatically filled based on your network selection, 
@@ -816,51 +816,13 @@
     </div>
   </div>
 
-  <!-- Step 3: Signing Method -->
+  <!-- Step 3: Connect MetaMask -->
   <div class="section">
     <div class="section-title">
       <span class="step-number">3</span>
-      Choose How to Sign
+      Connect MetaMask
     </div>
     
-    <label>
-      Signing Method
-      <select id="signingMethod" onchange="toggleSigningMethod()">
-        <option value="metamask">🦊 MetaMask Wallet</option>
-        <option value="privatekey">🔑 Private Key (Direct Signing)</option>
-      </select>
-    </label>
-    <div class="help-text">Select how you want to sign the transaction</div>
-
-    <!-- Private Key Section -->
-    <div id="privatekeySection" style="display: none;">
-      <div class="info-box" style="margin-top: 15px;">
-        <strong>🔑 Private Key Signing:</strong> Sign transactions directly using your wallet's private key. 
-       </div>
-    <div class="warning" style="font-size: 18px; padding: 15px;">
-      <strong>Internal Use Only.</strong>
-      This tool is provided for internal reference and development purposes only.
-      It is provided "as-is" without warranty, and it does not constitute legal, financial, or compliance advice.
-      </div>
-      <div class="security-warning" style="margin-top: 15px;">
-        <strong>⚠️ Security Notice:</strong> Your private key gives full control over your wallet. 
-        If you choose to use this method, ensure you're in a secure environment, you could download the HTML file and run it locally.
-      </div>
-
-      <label style="margin-top: 15px;">
-        Your Private Key
-        <input type="password" id="privateKey" placeholder="0x..." />
-      </label>
-      <div class="help-text">
-        <strong>🔐 Important:</strong>
-        <ul style="margin: 5px 0; padding-left: 20px;">
-          <li>Never share your private key with anyone</li>
-          <li>Only use this on trusted, secure tools</li>
-          <li>This key must match your wallet address in Step 2</li>
-        </ul>
-      </div>
-    </div>
-
     <!-- MetaMask Section -->
     <div id="metamaskSection">
       <div class="info-box" style="margin-top: 15px;">
@@ -869,11 +831,8 @@
       </div>
 
       <div class="warning" style="margin-top: 15px; padding: 15px; border-radius: 6px; font-size: 14px;">
-        <strong>⚠️ Important Note:</strong> MetaMask can only sign <strong>and broadcast</strong> transactions together. 
-        It cannot sign-only without broadcasting to the blockchain.
-        <br><br>
-        <strong>Need to sign without broadcasting?</strong> Use the <strong>Private Key</strong> signing method instead, 
-        which allows you to sign the transaction and manually copy the signed data before broadcasting.
+        <strong>⚠️ Important Note:</strong> MetaMask signs <strong>and broadcasts</strong> transactions together in one step. 
+        Your transaction will be sent to the blockchain immediately after approval.
       </div>
 
       <div id="metamaskStatus" style="margin-top: 15px; padding: 15px; border-radius: 6px; background: #f9f9f9;"></div>
@@ -888,50 +847,35 @@
           Download it here
         </a> (it's a free browser extension)
       </div>
+
+      <div class="info-box" style="margin-top: 15px;">
+        <strong>🔑 Need to sign with a Private Key?</strong><br>
+        For security reasons, private key signing is not available in the hosted version.<br>
+        <a href="#" onclick="downloadPKVersion(); return false;" style="color: var(--brand-color); font-weight: 600; text-decoration: underline; cursor: pointer;">
+          Download the Private Key version
+        </a> to sign transactions locally using your private key.
+      </div>
     </div>
   </div>
 
-  <!-- Step 4: Sign Transaction -->
+  <!-- Step 4: Sign & Broadcast Transaction -->
   <div class="section">
     <div class="section-title">
       <span class="step-number">4</span>
-      Sign Your Transaction
+      Sign & Broadcast Transaction
     </div>
     
     <div class="info-box">
-      <strong>ℹ️ What happens:</strong> This prepares your transaction and signs it with your wallet or private key. 
-      No blockchain action happens yet - this just creates the signed transaction.
+      <strong>ℹ️ What happens:</strong> MetaMask will prompt you to review and approve the transaction. 
+      Once approved, your transaction will be signed and broadcast to the blockchain in one step.
     </div>
 
-    <button id="signBtn" class="btn-primary">✍️ Sign Transaction</button>
-    <button id="copySignedBtn" disabled class="btn-secondary">📋 Copy Signed Transaction</button>
-    
-    <div class="help-text" style="margin-top: 15px;">
-      After signing, you can either broadcast it to the blockchain (Step 5) or copy the signed transaction 
-      to send to our API.
-    </div>
-  </div>
-
-  <!-- Step 5: Broadcast -->
-  <div class="section">
-    <div class="section-title">
-      <span class="step-number">5</span>
-      Broadcast to Blockchain
-    </div>
-    
-    <div class="info-box">
-      <strong>ℹ️ What happens:</strong> This sends your signed transaction to the blockchain network for processing. 
-      Once broadcast, you'll receive a transaction hash to track its status.
-    </div>
-
+    <button id="signBtn" class="btn-primary">✍️ Sign & Broadcast with MetaMask</button>
+    <button id="copySignedBtn" disabled class="btn-secondary" style="display: none;">📋 Copy Signed Transaction</button>
     <button id="sendBtn" disabled class="btn-success" style="display: none;">Broadcast Transaction</button>
     
     <div class="help-text" style="margin-top: 15px;">
-      <strong>Two options after signing:</strong>
-      <ul style="margin: 10px 0; padding-left: 20px;">
-        <li><strong>Option A:</strong> Click "Broadcast Transaction" to send it directly to the blockchain</li>
-        <li><strong>Option B:</strong> Click "Copy Signed Transaction" and send it back to our API</li>
-      </ul>
+      After clicking, MetaMask will open a popup where you can review the transaction details before approving.
     </div>
   </div>
 
@@ -1099,10 +1043,16 @@
   const metamaskStatus = document.getElementById('metamaskStatus');
 
   let signedTx = null;
-  let provider, wallet;
+  let provider;
   let transactionHash = null;
   let metamaskConnected = false;
   let metamaskAccount = null;
+
+  // Download PK version function
+  function downloadPKVersion() {
+    const downloadUrl = 'https://github.com/tokenyico/universal-transaction-signer/releases/latest/download/pk-local-signer.html';
+    window.open(downloadUrl, '_blank');
+  }
 
   // Network configuration
   const networks = {
@@ -1199,7 +1149,7 @@
       metamaskStatus.style.border = '2px solid #c3e6cb';
       connectMetamaskBtn.disabled = false;
     } else {
-      metamaskStatus.innerHTML = '❌ <strong>MetaMask not found.</strong> Please <a href="https://metamask.io/download/" target="_blank" style="color: var(--brand-color); font-weight: 600;">install MetaMask</a> or use the Private Key signing method.';
+      metamaskStatus.innerHTML = '❌ <strong>MetaMask not found.</strong> Please <a href="https://metamask.io/download/" target="_blank" style="color: var(--brand-color); font-weight: 600;">install MetaMask</a> to sign transactions, or <a href="#" onclick="downloadPKVersion(); return false;" style="color: var(--brand-color); font-weight: 600;">download the Private Key version</a> for local signing.';
       metamaskStatus.style.background = '#f8d7da';
       metamaskStatus.style.color = '#721c24';
       metamaskStatus.style.border = '2px solid #f5c6cb';
@@ -1207,20 +1157,6 @@
     }
   }
 
-  function toggleSigningMethod() {
-    const method = document.getElementById('signingMethod').value;
-    const metamaskSection = document.getElementById('metamaskSection');
-    const privatekeySection = document.getElementById('privatekeySection');
-    
-    if (method === 'privatekey') {
-      privatekeySection.style.display = 'block';
-      metamaskSection.style.display = 'none';
-    } else {
-      metamaskSection.style.display = 'block';
-      privatekeySection.style.display = 'none';
-      checkMetaMask();
-    }
-  }
 
   function toggleAdvanced() {
     const section = document.getElementById('advancedSection');
@@ -1399,8 +1335,6 @@
     copySignedBtn.disabled = true;
     apiCallSection.style.display = 'none';
 
-    const signingMethod = document.getElementById('signingMethod').value;
-
     try {
       // Get transaction details based on mode
       const mode = document.getElementById('transactionMode').value;
@@ -1428,12 +1362,10 @@
       if (!rpcUrl) throw new Error('Please enter the RPC URL in Step 1');
       if (!expectedChainId) throw new Error('Please enter the Chain ID in Step 1');
 
-      // Setup based on signing method
-      if (signingMethod === 'metamask') {
-        // MetaMask signing
-        if (!metamaskConnected) {
-          throw new Error('Please connect MetaMask first! Click the "Connect MetaMask" button in Step 3.');
-        }
+      // MetaMask signing
+      if (!metamaskConnected) {
+        throw new Error('Please connect MetaMask first! Click the "Connect MetaMask" button in Step 3.');
+      }
 
         // Verify from address matches MetaMask account
         if (from.toLowerCase() !== metamaskAccount.toLowerCase()) {
@@ -1461,56 +1393,6 @@
 
         output.textContent = '🦊 MetaMask ready! Building transaction...';
         provider = new ethers.BrowserProvider(window.ethereum);
-        
-      } else {
-        // Private key signing
-        const key = document.getElementById('privateKey').value.trim();
-        if (!key) throw new Error('Please enter your private key in Step 3');
-
-        // Setup provider & wallet
-        output.textContent = '🔌 Connecting to blockchain network...';
-        
-        try {
-          provider = new ethers.JsonRpcProvider(rpcUrl);
-        } catch (err) {
-          throw new Error(
-            `Failed to create RPC connection\n\n` +
-            `The RPC URL might be incorrect or unreachable.\n` +
-            `Please check the URL and try a different RPC provider.\n\n` +
-            `Error: ${err.message}`
-          );
-        }
-        
-        wallet = new ethers.Wallet(key, provider);
-
-        // Verify from matches private key
-        if (from.toLowerCase() !== wallet.address.toLowerCase()) {
-          throw new Error(
-            `Address mismatch!\n\n` +
-            `The wallet address you entered (${from}) doesn't match the address from your private key (${wallet.address}).\n\n` +
-            `Please check that your private key is correct.`
-          );
-        }
-
-        // Verify network
-        try {
-          const network = await provider.getNetwork();
-          
-          if (network.chainId.toString() !== expectedChainId) {
-            const networkName = networks[network.chainId]?.name || `Chain ID ${network.chainId}`;
-            const expectedName = networks[expectedChainId]?.name || `Chain ID ${expectedChainId}`;
-            throw new Error(
-              `Network mismatch!\n\n` +
-              `RPC URL returned: ${networkName}\n` +
-              `You selected: ${expectedName}\n\n` +
-              `Please check your network selection and RPC URL.`
-            );
-          }
-        } catch (err) {
-          if (err.message.includes('Network mismatch')) throw err;
-          throw new Error(handleRpcError(err, 'connect to RPC URL'));
-        }
-      }
 
       const networkName = networks[expectedChainId]?.name || `Chain ID ${expectedChainId}`;
       output.textContent = `✅ Network verified: ${networkName}\n\n📝 Building transaction...`;
@@ -1549,10 +1431,9 @@
       output.textContent = '⏳ Preparing transaction details (estimating gas, getting nonce, etc.)...';
       let populated, signerAddress;
 
-      if (signingMethod === 'metamask') {
-        // MetaMask transaction population and signing
-        const signer = await provider.getSigner();
-        signerAddress = await signer.getAddress();
+      // MetaMask transaction population and signing
+      const signer = await provider.getSigner();
+      signerAddress = await signer.getAddress();
         
         try {
           populated = await signer.populateTransaction(tx);
@@ -1684,67 +1565,6 @@
           
           throw new Error(errorMessage);
         }
-        
-      } else {
-        // Private key signing
-        try {
-          populated = await wallet.populateTransaction(tx);
-        } catch (err) {
-          let errorMsg = 'Failed to prepare transaction:\n\n';
-          
-          if (err.message.includes('Batch size too large') || err.code === -32062) {
-            errorMsg += '  RPC Provider Error: Batch size limit exceeded\n\n' +
-                       'The RPC provider you selected has strict limits.\n' +
-                       '🔄 Please go back to Step 1 and select a different RPC provider.\n' +
-                       'Try using Alchemy, Infura, or another public RPC.';
-          } else if (err.message.includes('failed to detect network') || err.message.includes('cannot start up')) {
-            errorMsg += '  RPC Provider Error: Cannot connect\n\n' +
-                       'The RPC provider is not responding.\n' +
-                       '🔄 Please go back to Step 1 and select a different RPC provider.';
-          } else if (err.code === 'INSUFFICIENT_FUNDS') {
-            errorMsg += '  Insufficient funds\n\n' +
-                       'Your wallet doesn\'t have enough balance to cover the transaction and gas fees.';
-          } else {
-            errorMsg += err.message + '\n\n' +
-                       'This might mean insufficient funds, invalid transaction data, or RPC issues.';
-          }
-          
-          throw new Error(errorMsg);
-        }
-        
-        signerAddress = wallet.address;
-
-        output.textContent = 
-          '📋 Transaction Details:\n\n' +
-          `Network: ${networkName}\n` +
-          `From: ${wallet.address}\n` +
-          `To: ${to}\n` +
-          `Value: ${value} ${networkName.includes('Polygon') ? 'MATIC' : 'ETH'}\n` +
-          `Nonce: ${populated.nonce}\n` +
-          `Estimated Gas: ${populated.gasLimit}\n\n` +
-          '🔐 Signing transaction with your private key...';
-
-        signedTx = await wallet.signTransaction(populated);
-
-        output.textContent =
-          'Transaction Signed Successfully!\n\n' +
-          `Network: ${networkName}\n` +
-          `Signer: ${wallet.address}\n` +
-          `Nonce: ${populated.nonce}\n` +
-          `Gas Limit: ${populated.gasLimit}\n\n` +
-          'Your transaction is ready!\n\n' +
-          'Next steps:\n' +
-          '• Click "Broadcast Transaction" to send it to the blockchain\n' +
-          '• OR click "Copy Signed Transaction" to send it to your API';
-        
-        // Auto-copy signed transaction to clipboard
-        autoCopyToClipboard(signedTx);
-      }
-      
-      output.className = 'success';
-      sendBtn.disabled = false;
-      sendBtn.style.display = 'inline-block';
-      copySignedBtn.disabled = false;
 
     } catch (err) {
       output.textContent = `Error: ${err.message || err}`;
